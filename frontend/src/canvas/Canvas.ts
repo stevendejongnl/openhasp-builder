@@ -41,12 +41,20 @@ function unshiftMdiCodepoint(ch: string): string | null {
   return null;
 }
 
-function renderGlyphOrText(text: string) {
+function renderGridText(text: string, fontPx: number) {
+  return [...deviceText(text)].map((ch) => {
+    const units = advanceUnits(ch);
+    if (units === null) return ch;
+    return html`<span class="adv" style="width:${Math.round((units * fontPx) / ADVANCE_UPM)}px">${ch}</span>`;
+  });
+}
+
+function renderGlyphOrText(text: string, fontPx: number = DEFAULT_FONT_PX) {
   if ([...text].length === 1) {
     const mdiChar = unshiftMdiCodepoint(text);
     if (mdiChar !== null) return html`<span class="mdi-glyph">${mdiChar}</span>`;
   }
-  return text;
+  return renderGridText(text, fontPx);
 }
 
 // Evaluated live values win over static_props (a jsonl literal is only the
@@ -63,39 +71,153 @@ function liveValue(
   return v === undefined ? undefined : String(v);
 }
 
+// openHASP fonts: `text_font: N` is Roboto Condensed Regular at N px
+// (verified against a device screenshot: advance widths match to <1px), and a
+// label with no text_font uses the device default of 32px.
+const DEFAULT_FONT_PX = 32;
+const DEVICE_FONT = "'roboto-condensed-hasp', 'Roboto Condensed', sans-serif";
+
+// Glyphs missing from the device's compiled font are skipped by LVGL: drawn as
+// nothing and zero-width (e.g. U+00B7 in "5h · 12m" shows as a plain gap).
+const GLYPHS_MISSING_ON_DEVICE = /\u00b7/g;
+
+// LVGL positions a label's first line lower than the browser's
+// `line-height: normal` box for this font (its line box is built from the
+// font's win/typo metrics, Chrome's from hhea): measured on a device screenshot
+// the glyphs sit 3px lower at 16px and 24px, 4px lower at 32px.
+function labelTopOffset(fontPx: number): number {
+  return Math.max(0, Math.floor(3 + (fontPx - 16) / 16));
+}
+
+function isMdiGlyph(text: string): boolean {
+  return [...text].length === 1 && unshiftMdiCodepoint(text) !== null;
+}
+
+// Advance widths (font units, 2048/em) of Roboto Condensed Regular for
+// U+0020..U+00FF plus the euro sign. LVGL rounds every glyph advance to whole
+// pixels, the browser keeps fractional ones, so long strings drift by a pixel
+// or two unless each glyph is placed on the integer grid like the device does.
+const ADVANCE_UPM = 2048;
+const ADVANCE_LATIN1 = [470,504,656,1122,1011,1296,1114,358,643,653,882,1018,403,508,540,760,1011,1011,1011,1011,1011,1011,1011,1011,1011,1011,478,415,913,981,943,865,1575,1181,1118,1161,1169,1018,985,1210,1270,512,990,1117,974,1547,1269,1231,1135,1231,1087,1062,1066,1150,1148,1560,1129,1075,1071,513,757,513,760,829,633,981,1010,946,1016,960,648,1010,989,470,459,923,470,1542,992,1028,1010,1025,624,934,606,990,876,1331,899,853,899,628,500,628,1207,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,470,475,983,1047,1461,950,492,1101,857,1609,812,856,998,508,1610,849,765,963,675,675,642,1021,890,499,470,675,826,856,1306,1388,1379,864,1181,1181,1181,1181,1181,1181,1664,1161,1018,1018,1018,1018,512,512,512,512,1199,1269,1231,1231,1231,1231,1231,964,1231,1150,1150,1150,1150,1075,1055,1069,981,981,981,981,981,981,1492,946,960,960,960,960,482,482,482,482,1052,992,1028,1028,1028,1028,1028,1024,1021,990,990,990,990,853,1041,853];
+const ADVANCE_EURO = 1011;
+
+function advanceUnits(ch: string): number | null {
+  const cp = ch.codePointAt(0)!;
+  if (cp >= 0x20 && cp <= 0xff) return ADVANCE_LATIN1[cp - 0x20] || null;
+  if (cp === 0x20ac) return ADVANCE_EURO;
+  return null;
+}
+
+// The device display is RGB565: every colour is quantised to 5/6/5 bits and
+// expanded back, which is why a plain grey looks faintly green on screen.
+function deviceColor(color: string): string {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(color);
+  if (!m) return color;
+  const hex = m[1].length === 3 ? m[1].replace(/./g, (c) => c + c) : m[1];
+  const n = parseInt(hex, 16);
+  const r5 = ((n >> 16) & 255) >> 3;
+  const g6 = ((n >> 8) & 255) >> 2;
+  const b5 = (n & 255) >> 3;
+  // LVGL expands with rounding (v * 255 / max), not bit replication.
+  const to = (v: number, max: number) => Math.round((v * 255) / max).toString(16).padStart(2, '0');
+  return `#${to(r5, 31)}${to(g6, 63)}${to(b5, 31)}`;
+}
+
+function deviceText(text: string): string {
+  return text.replace(GLYPHS_MISSING_ON_DEVICE, '');
+}
+
+// Value of a raw widget prop: the live /template_eval result wins over the
+// jsonl literal (templated props such as bg_color, text_color and w only
+// exist as templates in the yaml bindings).
+function rawProp(
+  w: PlacedWidget,
+  evaluated: Record<string, string> | undefined,
+  key: string
+): unknown {
+  if (evaluated && key in evaluated) {
+    const v = evaluated[key];
+    const n = Number(v);
+    return v.trim() !== '' && Number.isFinite(n) ? n : v;
+  }
+  return staticProps(w)[key];
+}
+
+// LVGL bg_opa is 0..255 and applies to the background only.
+function withOpacity(color: string, opa: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(color);
+  if (!m || opa >= 255) return color;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${Math.max(0, opa) / 255})`;
+}
+
+function rawGeometry(w: PlacedWidget, evaluated: Record<string, string> | undefined) {
+  const num = (key: string, fallback: number) => {
+    const v = rawProp(w, evaluated, key);
+    return typeof v === 'number' ? v : fallback;
+  };
+  return { x: num('x', w.x), y: num('y', w.y), w: num('w', w.w), h: num('h', w.h) };
+}
+
 // The real device never draws a border/bg unless bg_color/bg_opa says so --
 // our base `.widget` class always shows a faint hint border so *empty*
 // widgets stay visible/selectable in the editor. Raw imported widgets with
 // real device props override that hint entirely to match the actual look:
 // labels and transparent click-catchers (bg_opa:0) get no chrome at all,
-// everything else shows its real bg_color or nothing.
-function rawStyle(w: PlacedWidget): string {
+// everything else shows its real bg_color or nothing. Borders and padding are
+// zeroed so content sits exactly at x/y like LVGL (box-sizing would otherwise
+// inset it by the hint border + padding).
+function rawStyle(w: PlacedWidget, evaluated: Record<string, string> | undefined): string {
   if (w.widget_def_id !== 'raw') return '';
-  const props = staticProps(w);
   const objType = String(w.params?.obj_type ?? 'raw');
-  const parts: string[] = ['border-color:transparent'];
+  const geo = rawGeometry(w, evaluated);
+  const parts: string[] = [
+    `left:${geo.x}px`,
+    `top:${geo.y}px`,
+    `width:${geo.w}px`,
+    `height:${geo.h}px`,
+    'border:0',
+    'padding:0',
+    `font-family:${DEVICE_FONT}`,
+    'line-height:normal',
+    'font-variant-ligatures:none',
+    'font-kerning:none',
+  ];
 
-  const isTransparent = props.bg_opa === 0;
+  const bgColor = rawProp(w, evaluated, 'bg_color');
+  const bgOpa = rawProp(w, evaluated, 'bg_opa');
   const isLabel = objType === 'label';
-
-  if (isTransparent || isLabel) {
+  if (isLabel || bgOpa === 0 || typeof bgColor !== 'string') {
     parts.push('background:transparent');
-  } else if (typeof props.bg_color === 'string') {
-    parts.push(`background:${props.bg_color}`);
   } else {
-    parts.push('background:transparent');
+    parts.push(`background:${withOpacity(deviceColor(bgColor), typeof bgOpa === 'number' ? bgOpa : 255)}`);
   }
 
-  if (typeof props.text_color === 'string') parts.push(`color:${props.text_color}`);
-  if (typeof props.radius === 'number') parts.push(`border-radius:${props.radius}px`);
-  if (typeof props.text_font === 'number') parts.push(`font-size:${Math.max(9, props.text_font)}px`);
+  const textColor = rawProp(w, evaluated, 'text_color');
+  parts.push(`color:${deviceColor(typeof textColor === 'string' ? textColor : '#ffffff')}`);
+
+  const radius = rawProp(w, evaluated, 'radius');
+  if (typeof radius === 'number') parts.push(`border-radius:${radius}px`);
+
+  const font = rawProp(w, evaluated, 'text_font');
+  parts.push(`font-size:${typeof font === 'number' ? font : DEFAULT_FONT_PX}px`);
+
   // LVGL's `align` on a label is horizontal-only -- text sits at the top of
   // the label's box by default, it is NOT vertically centered. The real
   // device's temp-button row visibly shows this (text sits high in the
   // circle, not centered) -- reproducing that quirk faithfully, not "fixing"
   // it, is the goal here.
-  if (typeof props.align === 'string') {
-    parts.push(`text-align:${props.align}`);
+  const align = rawProp(w, evaluated, 'align');
+  if (typeof align === 'string') parts.push(`text-align:${align}`);
+
+  if (isLabel) {
+    // Label text is not clipped to its box on the device, and does not wrap.
+    parts.push('overflow:visible', 'white-space:pre');
+    const text = String(rawProp(w, evaluated, 'text') ?? '');
+    // MDI glyphs sit 1px lower on the device than the browser draws them.
+    parts.push(
+      `padding-top:${isMdiGlyph(text) ? 1 : labelTopOffset(typeof font === 'number' ? font : DEFAULT_FONT_PX)}px`
+    );
   }
   return parts.join(';');
 }
@@ -108,6 +230,12 @@ if (!document.getElementById('ohb-canvas-fonts')) {
       font-family: 'mdi-hasp';
       src: url('/api/openhasp_builder/static/assets/mdi.woff2') format('woff2');
       font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'roboto-condensed-hasp';
+      src: url('/api/openhasp_builder/static/assets/roboto-condensed-regular.woff2') format('woff2');
+      font-weight: 400;
       font-style: normal;
     }
     @font-face {
@@ -129,6 +257,9 @@ if (!document.getElementById('ohb-canvas-fonts')) {
 const sliderCss = css`
   .mdi-glyph {
     font-family: 'mdi-hasp';
+  }
+  .adv {
+    display: inline-block;
   }
   .raw-slider {
     display: flex;
@@ -202,6 +333,11 @@ function clampPct(val: number, min: number, max: number): number {
   return Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
 }
 
+function rawFontPx(w: PlacedWidget, evaluated: Record<string, string> | undefined): number {
+  const font = rawProp(w, evaluated, 'text_font');
+  return typeof font === 'number' ? font : DEFAULT_FONT_PX;
+}
+
 function rawBody(w: PlacedWidget, evaluated: Record<string, string> | undefined) {
   const props = staticProps(w);
   const objType = String(w.params?.obj_type ?? 'raw');
@@ -246,7 +382,7 @@ function rawBody(w: PlacedWidget, evaluated: Record<string, string> | undefined)
 
   if (objType === 'btn') {
     const text = liveValue(evaluated, props, 'text') ?? '';
-    return html`<div class="raw-btn">${renderGlyphOrText(text)}</div>`;
+    return html`<div class="raw-btn">${renderGlyphOrText(text, rawFontPx(w, evaluated))}</div>`;
   }
 
   if (objType === 'msgbox') {
@@ -255,7 +391,7 @@ function rawBody(w: PlacedWidget, evaluated: Record<string, string> | undefined)
   }
 
   if (objType === 'label') {
-    return html`${renderGlyphOrText(liveValue(evaluated, props, 'text') ?? '')}`;
+    return html`${renderGlyphOrText(liveValue(evaluated, props, 'text') ?? '', rawFontPx(w, evaluated))}`;
   }
 
   // Plain `obj` containers are background/decoration only -- no text.
@@ -426,7 +562,7 @@ export class Canvas extends LitElement {
     return html`
       <div
         class="surface"
-        style="width:${this.deviceProfile.width}px;height:${this.deviceProfile.height}px;background:${this.page.background}"
+        style="width:${this.deviceProfile.width}px;height:${this.deviceProfile.height}px;background:${deviceColor(this.page.background)}"
         @dragover=${this.onSurfaceDragOver}
         @drop=${this.onSurfaceDrop}
         @pointerdown=${() =>
@@ -447,16 +583,14 @@ export class Canvas extends LitElement {
           const themeStyle = t
             ? `background:${t.colors.card_bg};color:${t.colors.text};border-radius:${t.spacing.corner_radius}px;font-family:${t.fonts.family}`
             : '';
-          const fullStyle = `left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px;${themeStyle};${rawStyle(w)}`;
+          const fullStyle = `left:${w.x}px;top:${w.y}px;width:${w.w}px;height:${w.h}px;${themeStyle};${rawStyle(w, this.evaluatedValues[w.obj_id_start])}`;
           return html`
             <div
               class=${classes}
               style=${fullStyle}
               @pointerdown=${(e: PointerEvent) => this.onWidgetPointerDown(e, w)}
               @dblclick=${(e: MouseEvent) => this.onWidgetDoubleClick(e, w)}
-            >
-              ${w.widget_def_id === 'raw' ? rawBody(w, this.evaluatedValues[w.obj_id_start]) : w.widget_def_id}
-            </div>
+            >${w.widget_def_id === 'raw' ? rawBody(w, this.evaluatedValues[w.obj_id_start]) : w.widget_def_id}</div>
           `;
         })}
       </div>
