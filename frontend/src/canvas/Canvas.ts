@@ -196,8 +196,11 @@ function rawStyle(w: PlacedWidget, evaluated: Record<string, string> | undefined
   const textColor = rawProp(w, evaluated, 'text_color');
   parts.push(`color:${deviceColor(typeof textColor === 'string' ? textColor : '#ffffff')}`);
 
+  // A raw widget has square corners unless it says otherwise (the editor's
+  // theme radius must not leak in); an LVGL slider defaults to fully round.
   const radius = rawProp(w, evaluated, 'radius');
-  if (typeof radius === 'number') parts.push(`border-radius:${radius}px`);
+  parts.push(`border-radius:${typeof radius === 'number' ? radius : objType === 'slider' ? 9999 : 0}px`);
+  if (objType === 'img' || objType === 'slider') parts.push('overflow:visible'); // knob / scaled image extend past the box
 
   const font = rawProp(w, evaluated, 'text_font');
   parts.push(`font-size:${typeof font === 'number' ? font : DEFAULT_FONT_PX}px`);
@@ -261,34 +264,17 @@ const sliderCss = css`
   .adv {
     display: inline-block;
   }
-  .raw-slider {
-    display: flex;
-    align-items: center;
-    height: 100%;
-    padding: 0 4px;
-  }
-  .raw-slider .track {
-    position: relative;
-    flex: 1;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 2px;
-  }
-  .raw-slider .fill {
+  .slider-fill {
     position: absolute;
     left: 0;
     top: 0;
     bottom: 0;
-    background: var(--primary-color, #03a9f4);
-    border-radius: 2px;
+    border-radius: inherit;
   }
-  .raw-slider .knob {
+  .slider-knob {
     position: absolute;
     top: 50%;
-    width: 12px;
-    height: 12px;
     border-radius: 50%;
-    background: #fff;
     transform: translate(-50%, -50%);
   }
   .raw-gauge {
@@ -312,10 +298,44 @@ const sliderCss = css`
     height: 100%;
     opacity: 0.7;
   }
+  .raw-img-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
   .raw-img-tag {
     width: 100%;
     height: 100%;
     object-fit: contain;
+  }
+  /* auto_size: LVGL draws the image at its native size and zooms it about its own centre */
+  .raw-img-tag.native {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: auto;
+    height: auto;
+    max-width: none;
+    transform-origin: center;
+  }
+  /* what LVGL shows when an image cannot be loaded */
+  .raw-img-wrap .no-data {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    color: #000;
+    font-size: 32px;
+    line-height: 41px;
+    padding-top: 4px;
+    white-space: pre;
+    overflow: hidden;
+  }
+  .raw-img-wrap.failed .no-data {
+    display: block;
+  }
+  .raw-img-wrap.failed .raw-img-tag {
+    display: none;
   }
   .raw-btn {
     display: flex;
@@ -347,14 +367,22 @@ function rawBody(w: PlacedWidget, evaluated: Record<string, string> | undefined)
     const max = Number(props.max ?? 100);
     const val = Number(liveValue(evaluated, props, 'val') ?? min);
     const pct = clampPct(val, min, max);
-    return html`
-      <div class="raw-slider">
-        <div class="track">
-          <div class="fill" style="width:${pct}%"></div>
-          <div class="knob" style="left:${pct}%"></div>
-        </div>
-      </div>
-    `;
+    // LVGL slider: the object box is the track (bg_color), the indicator is the
+    // filled part (bg_color10) and the knob (bg_color20) is a circle larger than
+    // the track by 5px each side, centred on the value and free to overflow.
+    const color = (key: string, fallback: string) => {
+      const v = rawProp(w, evaluated, key);
+      return deviceColor(typeof v === 'string' ? v : fallback);
+    };
+    const knob = rawGeometry(w, evaluated).h + 10;
+    return html`<div
+        class="slider-fill"
+        style="width:${pct}%;background:${color('bg_color10', '#08ae94')}"
+      ></div
+      ><div
+        class="slider-knob"
+        style="left:${pct}%;width:${knob}px;height:${knob}px;background:${color('bg_color20', '#ffffff')}"
+      ></div>`;
   }
 
   if (objType === 'gauge') {
@@ -377,7 +405,15 @@ function rawBody(w: PlacedWidget, evaluated: Record<string, string> | undefined)
   if (objType === 'img') {
     const src = relativizeSrc(String(props.src ?? ''));
     if (!src) return html`<div class="raw-img">🖼 image</div>`;
-    return html`<img class="raw-img-tag" src=${src} />`;
+    const zoom = typeof props.zoom === 'number' ? props.zoom / 256 : 1;
+    const native = props.auto_size !== 0 && props.auto_size !== false;
+    return html`<div class="raw-img-wrap"
+      ><img
+        class="raw-img-tag ${native ? 'native' : ''}"
+        src=${src}
+        style=${native ? `transform:scale(${zoom})` : ''}
+        @error=${(e: Event) => (e.target as HTMLElement).parentElement?.classList.add('failed')}
+      /><div class="no-data" aria-hidden="true">No\ndata</div></div>`;
   }
 
   if (objType === 'btn') {
