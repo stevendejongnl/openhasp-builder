@@ -239,6 +239,10 @@ export class OpenhaspBuilderPanel extends LitElement {
     .stagebar .info {
       color: var(--ohb-muted);
       font-size: 12px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .compare {
       display: grid;
