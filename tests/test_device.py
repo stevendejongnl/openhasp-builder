@@ -183,23 +183,23 @@ async def test_panel_is_asked_to_report_its_address_and_waited_for(hass):
     async def fake_publish(call):
         asked.append((call.data["topic"], call.data["payload"]))
         # the panel answers with a status update, which gives the entity its attributes
-        hass.states.async_set("openhasp.plate", "1", {"friendly_name": "living_room", "node": "living_room", "ip": "192.168.1.115"})
+        hass.states.async_set("openhasp.plate", "1", {"friendly_name": "living_room", "node": "living_room", "ip": "192.168.1.60"})
 
     hass.services.async_register("mqtt", "publish", fake_publish)
-    assert await device.resolve_device_ip(hass, "living_room") == "192.168.1.115"
+    assert await device.resolve_device_ip(hass, "living_room") == "192.168.1.60"
     assert asked == [("hasp/living_room/command/statusupdate", "")]
 
 
 @pytest.mark.asyncio
 async def test_panel_is_not_asked_when_the_address_is_already_known(hass):
-    hass.states.async_set("openhasp.plate", "1", {"node": "living_room", "ip": "192.168.1.115"})
+    hass.states.async_set("openhasp.plate", "1", {"node": "living_room", "ip": "192.168.1.60"})
     asked = []
 
     async def fake_publish(call):
         asked.append(call)
 
     hass.services.async_register("mqtt", "publish", fake_publish)
-    assert await device.resolve_device_ip(hass, "living_room") == "192.168.1.115"
+    assert await device.resolve_device_ip(hass, "living_room") == "192.168.1.60"
     assert asked == []
 
 
