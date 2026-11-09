@@ -3,7 +3,7 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { PlacedWidget, WidgetDef } from '../schema';
 import { tokens, controls } from '../ui/styles';
 import { icon, iconForType } from '../ui/icons';
-import { layerName } from './LayerList';
+import { layerName } from '../lib/layers';
 
 type View = 'design' | 'bindings' | 'raw';
 const FONT_SIZES = [12, 16, 24, 32];

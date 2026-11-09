@@ -11,6 +11,7 @@ import './canvas/ConfigEditor';
 import * as api from './api/client';
 import { tokens, controls } from './ui/styles';
 import { icon } from './ui/icons';
+import { fitZoom, nudgePosition } from './lib/geometry';
 import type {
   Plate,
   WidgetDef,
@@ -1115,8 +1116,7 @@ export class OpenhaspBuilderPanel extends LitElement {
     const area = this.renderRoot.querySelector('.canvas-area') as HTMLElement | null;
     const profile = this.plate ? DEVICE_PROFILES[this.plate.device_profile_id] : null;
     if (!area || !profile) return 1;
-    const fit = Math.min((area.clientWidth - 66) / profile.width, (area.clientHeight - 66) / profile.height);
-    return Math.max(0.5, Math.min(3, Math.floor(fit * 4) / 4));
+    return fitZoom(area.clientWidth, area.clientHeight, profile.width, profile.height);
   }
 
   private setZoom(z: number, auto: boolean) {
@@ -1189,7 +1189,7 @@ export class OpenhaspBuilderPanel extends LitElement {
       if (!page) return;
       page.widgets = page.widgets.map((w) =>
         this.selectedObjIds.has(w.obj_id_start)
-          ? { ...w, x: Math.max(0, w.x + dx), y: Math.max(0, w.y + dy) }
+          ? { ...w, ...nudgePosition(w.x, w.y, dx, dy) }
           : w
       );
     });
