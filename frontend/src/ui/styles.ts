@@ -206,3 +206,79 @@ export const controls = css`
     }
   }
 `;
+
+// Shared look for the full-screen dialogs (raw editor, config editor): the same
+// treatment as the Publish dialog in the panel.
+export const modalStyles = css`
+  :host {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 100;
+    font-family: var(--ohb-font);
+    color: var(--ohb-text);
+    font-size: 13px;
+  }
+  .modal {
+    background: var(--ohb-panel);
+    border: 1px solid var(--ohb-border);
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+    display: grid;
+    gap: 16px;
+    min-height: 0;
+    max-height: 88vh;
+    box-sizing: border-box;
+  }
+  .modal h2 {
+    margin: 0;
+    font-size: 16px;
+  }
+  .modal .hint {
+    margin: 0;
+    color: var(--ohb-muted);
+  }
+  .actions {
+    display: grid;
+    grid-auto-flow: column;
+    justify-content: end;
+    gap: 8px;
+  }
+  .field {
+    display: grid;
+    gap: 4px;
+  }
+  .field > span {
+    color: var(--ohb-muted);
+    font-size: 11.5px;
+  }
+  textarea.code {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 110px;
+    font: 400 12px/1.5 var(--ohb-mono);
+    padding: 8px 12px;
+    background: var(--ohb-panel-2);
+    border: 1px solid var(--ohb-border);
+    color: inherit;
+    border-radius: var(--ohb-r-sm);
+    resize: vertical;
+  }
+  textarea.code:focus {
+    border-color: var(--ohb-accent);
+    outline: none;
+  }
+  .error {
+    color: var(--ohb-danger);
+    font-size: 12px;
+  }
+  .warnings {
+    color: var(--ohb-warn);
+    font-size: 12px;
+    max-height: 80px;
+    overflow-y: auto;
+  }
+`;

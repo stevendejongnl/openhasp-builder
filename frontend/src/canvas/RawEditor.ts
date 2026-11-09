@@ -1,86 +1,21 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { PlacedWidget } from '../schema';
+import { tokens, controls, modalStyles } from '../ui/styles';
 
 @customElement('ohb-raw-editor')
 export class RawEditor extends LitElement {
-  static styles = css`
-    :host {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 100;
-    }
-    .modal {
-      width: 480px;
-      max-height: 80vh;
-      overflow-y: auto;
-      background: var(--card-background-color, #222);
-      border-radius: 6px;
-      padding: 16px;
-      color: var(--primary-text-color, #eee);
-    }
-    h3 {
-      margin-top: 0;
-      font-size: 15px;
-    }
-    label {
-      display: block;
-      font-size: 12px;
-      margin-top: 10px;
-      margin-bottom: 2px;
-      color: var(--secondary-text-color, #888);
-    }
-    input[type='text'] {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 4px 6px;
-      background: var(--secondary-background-color, #2c2c2c);
-      border: 1px solid var(--divider-color, #333);
-      color: inherit;
-      border-radius: 3px;
-    }
-    textarea {
-      width: 100%;
-      box-sizing: border-box;
-      min-height: 120px;
-      font-family: monospace;
-      font-size: 12px;
-      padding: 6px;
-      background: var(--secondary-background-color, #2c2c2c);
-      border: 1px solid var(--divider-color, #333);
-      color: inherit;
-      border-radius: 3px;
-    }
-    .error {
-      color: #ff6b6b;
-      font-size: 12px;
-      margin-top: 4px;
-    }
-    .actions {
-      margin-top: 14px;
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
-    button {
-      padding: 6px 14px;
-      border: 1px solid var(--divider-color, #333);
-      border-radius: 3px;
-      background: var(--secondary-background-color, #2c2c2c);
-      color: inherit;
-      cursor: pointer;
-      font-size: 13px;
-    }
-    button.primary {
-      background: var(--primary-color, #03a9f4);
-      border-color: var(--primary-color, #03a9f4);
-      color: #fff;
-    }
-  `;
+  static styles = [
+    tokens,
+    controls,
+    modalStyles,
+    css`
+      .modal {
+        width: min(560px, 94vw);
+        overflow-y: auto;
+      }
+    `,
+  ];
 
   @property({ attribute: false }) widget!: PlacedWidget;
   @state() private objTypeText = '';
@@ -98,6 +33,31 @@ export class RawEditor extends LitElement {
       this.eventText = JSON.stringify(params.event ?? {}, null, 2);
     }
   }
+
+  connectedCallback() {
+    super.connectedCallback();
+    // A dialog: Escape and a click on the dim backdrop close it.
+    window.addEventListener('keydown', this.onKey);
+    this.addEventListener('click', this.onBackdrop);
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('keydown', this.onKey);
+    this.removeEventListener('click', this.onBackdrop);
+  }
+
+  firstUpdated() {
+    (this.renderRoot.querySelector('input, textarea') as HTMLElement | null)?.focus();
+  }
+
+  private onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') this.onClose();
+  };
+
+  private onBackdrop = (e: MouseEvent) => {
+    if (e.target === this) this.onClose();
+  };
 
   private onClose() {
     this.dispatchEvent(new CustomEvent('raw-editor-close', { bubbles: true, composed: true }));
@@ -131,39 +91,52 @@ export class RawEditor extends LitElement {
 
   render() {
     return html`
-      <div class="modal">
-        <h3>Raw Object Editor — id ${this.widget?.obj_id_start}</h3>
+      <div class="modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="raw-title">
+        <h2 id="raw-title">Raw object editor · id ${this.widget?.obj_id_start}</h2>
+        <p class="hint">The object exactly as it is stored: device properties, Home Assistant bindings and events.</p>
 
-        <label>obj type</label>
-        <input
-          type="text"
-          .value=${this.objTypeText}
-          @input=${(e: Event) => (this.objTypeText = (e.target as HTMLInputElement).value)}
-        />
+        <label class="field">
+          <span>obj type</span>
+          <input
+            class="txt"
+            type="text"
+            .value=${this.objTypeText}
+            @input=${(e: Event) => (this.objTypeText = (e.target as HTMLInputElement).value)}
+          />
+        </label>
 
-        <label>static_props (JSON)</label>
-        <textarea
-          .value=${this.staticPropsText}
-          @input=${(e: Event) => (this.staticPropsText = (e.target as HTMLTextAreaElement).value)}
-        ></textarea>
+        <label class="field">
+          <span>static_props (JSON)</span>
+          <textarea
+            class="code"
+            .value=${this.staticPropsText}
+            @input=${(e: Event) => (this.staticPropsText = (e.target as HTMLTextAreaElement).value)}
+          ></textarea>
+        </label>
 
-        <label>properties (JSON, HA templates/bindings)</label>
-        <textarea
-          .value=${this.propertiesText}
-          @input=${(e: Event) => (this.propertiesText = (e.target as HTMLTextAreaElement).value)}
-        ></textarea>
+        <label class="field">
+          <span>properties (JSON, HA templates / bindings)</span>
+          <textarea
+            class="code"
+            .value=${this.propertiesText}
+            @input=${(e: Event) => (this.propertiesText = (e.target as HTMLTextAreaElement).value)}
+          ></textarea>
+        </label>
 
-        <label>event (JSON, HA service calls)</label>
-        <textarea
-          .value=${this.eventText}
-          @input=${(e: Event) => (this.eventText = (e.target as HTMLTextAreaElement).value)}
-        ></textarea>
+        <label class="field">
+          <span>event (JSON, HA service calls)</span>
+          <textarea
+            class="code"
+            .value=${this.eventText}
+            @input=${(e: Event) => (this.eventText = (e.target as HTMLTextAreaElement).value)}
+          ></textarea>
+        </label>
 
-        ${this.jsonError ? html`<div class="error">${this.jsonError}</div>` : html``}
+        ${this.jsonError ? html`<div class="error" role="alert">${this.jsonError}</div>` : html``}
 
         <div class="actions">
-          <button @click=${this.onClose}>Cancel</button>
-          <button class="primary" @click=${this.onSave}>Save</button>
+          <button class="btn" @click=${this.onClose}>Cancel</button>
+          <button class="btn primary" @click=${this.onSave}>Save</button>
         </div>
       </div>
     `;
