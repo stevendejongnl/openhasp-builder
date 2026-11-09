@@ -138,3 +138,19 @@ def test_commented_out_comment_line_does_not_rename_the_group(tmp_path):
     yaml_file.write_text("p:\n  objects: []\n")
     plate, _ = import_plate("p", str(jsonl), str(yaml_file), "square_480", "dark")
     assert plate.pages[0].widgets[0].group == "Real group"
+
+
+def test_page_without_declaration_defaults_to_the_device_black(tmp_path):
+    jsonl = tmp_path / "p.jsonl"
+    jsonl.write_text(
+        '{"page":1,"id":0,"bg_color":"#111111"}\n'
+        '{"page":1,"id":1,"obj":"label","x":0,"y":0,"w":10,"h":10,"text":"a"}\n'
+        '{"page":3,"id":1,"obj":"label","x":0,"y":0,"w":10,"h":10,"text":"b"}\n'
+    )
+    yaml_file = tmp_path / "p.yaml"
+    yaml_file.write_text("p:\n  objects: []\n")
+    plate, _ = import_plate("p", str(jsonl), str(yaml_file), "square_480", "dark")
+    by_id = {p.id: p for p in plate.pages}
+    assert by_id[1].background == "#111111"   # declared: keep what the file says
+    assert by_id[3].background == "#000000"   # undeclared: openHASP's default
+    assert by_id[3].has_declaration is False

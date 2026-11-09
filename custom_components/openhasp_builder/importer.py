@@ -159,7 +159,9 @@ def import_plate_text(plate_id: str, jsonl_text: str, yaml_text: str,
         decl = page_decls.get(page_id)
         has_declaration = decl is not None
         page_props = dict(decl) if decl is not None else {}
-        background = page_props.get("bg_color", "#111111")
+        # openHASP's own default screen colour is black (verified on a device
+        # screenshot of a page with no declaration), not the editor's dark grey.
+        background = page_props.get("bg_color", "#000000")
 
         pages.append(Page(id=page_id, order=page_id - 1,
                            background=background,
