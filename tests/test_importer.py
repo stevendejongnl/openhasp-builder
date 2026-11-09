@@ -91,3 +91,50 @@ def test_malformed_json_line_produces_warning_not_crash(tmp_path):
     assert "could not parse JSON" in warnings[0]
     obj_ids = [w.obj_id_start for p in plate.pages for w in p.widgets]
     assert 5 in obj_ids
+
+
+def test_widgets_take_the_name_of_the_preceding_comment_line():
+    plate, _ = import_plate(
+        plate_id="dashboard",
+        jsonl_path=os.path.join(FIXTURES, "dashboard_pages.jsonl"),
+        yaml_path=os.path.join(FIXTURES, "dashboard.yaml"),
+        device_profile_id="square_480",
+        theme_id="dark",
+    )
+    page1 = next(p for p in plate.pages if p.id == 1)
+    groups = [w.group for w in page1.widgets]
+    assert "Attic CO2" in groups
+    assert "Attic Hue Light" in groups
+    assert "" not in groups  # every widget on this page follows a comment
+    # The page's own id:0 declaration is not a widget and carries no group.
+    assert all(w.obj_id_start != 0 for w in page1.widgets)
+    # Overlay widgets (page 0) are grouped under the "Overlay" comment.
+    page0 = next(p for p in plate.pages if p.id == 0)
+    assert {w.group for w in page0.widgets} == {"Overlay"}
+
+
+def test_group_is_not_part_of_the_widgets_device_props():
+    plate, _ = import_plate(
+        plate_id="dashboard",
+        jsonl_path=os.path.join(FIXTURES, "dashboard_pages.jsonl"),
+        yaml_path=os.path.join(FIXTURES, "dashboard.yaml"),
+        device_profile_id="square_480",
+        theme_id="dark",
+    )
+    for page in plate.pages:
+        for widget in page.widgets:
+            assert "_group" not in widget.params["static_props"]
+            assert "_disabled" not in widget.params["static_props"]
+
+
+def test_commented_out_comment_line_does_not_rename_the_group(tmp_path):
+    jsonl = tmp_path / "p.jsonl"
+    jsonl.write_text(
+        '{"comment":"Real group"}\n'
+        '// {"comment":"Not a group"}\n'
+        '{"page":1,"id":1,"obj":"label","x":0,"y":0,"w":10,"h":10,"text":"a"}\n'
+    )
+    yaml_file = tmp_path / "p.yaml"
+    yaml_file.write_text("p:\n  objects: []\n")
+    plate, _ = import_plate("p", str(jsonl), str(yaml_file), "square_480", "dark")
+    assert plate.pages[0].widgets[0].group == "Real group"

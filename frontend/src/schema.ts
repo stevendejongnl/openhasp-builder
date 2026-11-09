@@ -18,6 +18,8 @@ export interface PlacedWidget {
   obj_id_start: number;
   obj_id_end: number;
   disabled: boolean;
+  /** Name from the jsonl comment line preceding this widget; empty when it has none. */
+  group?: string;
 }
 
 export interface Page {

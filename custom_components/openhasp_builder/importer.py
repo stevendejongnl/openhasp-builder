@@ -13,6 +13,9 @@ def _parse_jsonl_text(jsonl_text: str, source_label: str = "jsonl") -> tuple[dic
         line, or None if absent
       - warnings: list of warning strings
 
+    Widgets carry the name of the preceding live `{"comment": ...}` line as
+    `_group` (never on the page's own `id:0` declaration line).
+
     Lines starting with `//` are treated as commented-out entries: the `//`
     is stripped and the remainder is parsed as JSON; if it parses and has
     both `page` and `id` keys, it is stored like a live entry but flagged
@@ -34,6 +37,9 @@ def _parse_jsonl_text(jsonl_text: str, source_label: str = "jsonl") -> tuple[dic
     page_decls: dict = {}
     plate_name: str | None = None
     warnings: list[str] = []
+    # A live `{"comment": "X"}` line names every widget after it until the next
+    # comment line. Stored on each widget as `_group` (like `_disabled`).
+    current_group = ""
     for lineno, raw_line in enumerate(jsonl_text.splitlines(), start=1):
         line = raw_line.strip()
         if not line:
@@ -52,6 +58,8 @@ def _parse_jsonl_text(jsonl_text: str, source_label: str = "jsonl") -> tuple[dic
             warnings.append(f"{source_label}:{lineno}: could not parse JSON, skipped")
             continue
         if "comment" in obj and "page" not in obj:
+            if not disabled:
+                current_group = str(obj["comment"]).strip()
             continue
         if "plate_name" in obj:
             if not disabled and plate_name is None:
@@ -70,6 +78,8 @@ def _parse_jsonl_text(jsonl_text: str, source_label: str = "jsonl") -> tuple[dic
                 page_decls[page_id] = obj
             continue
 
+        if current_group:
+            obj = dict(obj, _group=current_group)
         if disabled:
             obj = dict(obj, _disabled=True)
 
@@ -131,7 +141,7 @@ def import_plate_text(plate_id: str, jsonl_text: str, yaml_text: str,
             obj_ref = f"p{page_id}b{obj_id}"
             binding = bindings.get(obj_ref, {})
             is_disabled = bool(geo.get("_disabled", False))
-            static_props = {k: v for k, v in geo.items() if k != "_disabled"}
+            static_props = {k: v for k, v in geo.items() if k not in ("_disabled", "_group")}
             widget = PlacedWidget(
                 widget_def_id="raw",
                 x=geo.get("x", 0), y=geo.get("y", 0),
@@ -142,6 +152,7 @@ def import_plate_text(plate_id: str, jsonl_text: str, yaml_text: str,
                         "event": binding.get("event", {})},
                 obj_id_start=obj_id, obj_id_end=obj_id,
                 disabled=is_disabled,
+                group=geo.get("_group", ""),
             )
             widgets.append(widget)
 

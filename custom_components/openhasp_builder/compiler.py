@@ -2,6 +2,8 @@ import json
 import yaml as pyyaml
 from .schema import Plate
 
+UNGROUPED = "Ungrouped"
+
 
 def compile_plate(plate: Plate) -> tuple[str, str]:
     jsonl_lines = [json.dumps({"plate_name": plate.display_name or plate.id})]
@@ -18,7 +20,16 @@ def compile_plate(plate: Plate) -> tuple[str, str]:
             if "bg_color" not in decl:
                 decl["bg_color"] = page.background
             jsonl_lines.append(json.dumps(decl))
+        # A comment line names every widget after it, so emit one whenever the
+        # group changes. A widget without a group that follows a named one
+        # (e.g. one added in the editor) gets "Ungrouped": without it the next
+        # import would merge it into the group above.
+        last_group = ""
         for widget in page.widgets:
+            label = widget.group or (UNGROUPED if last_group else "")
+            if label and label != last_group:
+                jsonl_lines.append(json.dumps({"comment": label}))
+                last_group = label
             if widget.widget_def_id == "raw":
                 static_props = dict(widget.params.get("static_props", {}))
                 static_props["page"] = page.id

@@ -119,3 +119,53 @@ def test_living_room_round_trip_preserves_all_widgets_including_disabled_and_pag
     _assert_round_trip_preserves_all_widgets(plate, reimported)
     assert plate.display_name == "Living Room"
     assert reimported.display_name == "Living Room"
+
+
+def _raw(obj_id, group="", **extra):
+    from custom_components.openhasp_builder.schema import PlacedWidget
+    return PlacedWidget(
+        widget_def_id="raw", x=0, y=0, w=10, h=10, page=1,
+        params={"obj_type": "label", "static_props": {"obj": "label", "text": str(obj_id), **extra},
+                "properties": {}, "event": {}},
+        obj_id_start=obj_id, obj_id_end=obj_id, group=group,
+    )
+
+
+def _plate(*widgets):
+    from custom_components.openhasp_builder.schema import Plate, Page
+    return Plate(id="p", device_profile_id="square_480", theme_id="dark",
+                 pages=[Page(id=1, order=0, background="#111111", widgets=list(widgets))])
+
+
+def test_compile_writes_a_comment_line_when_the_group_changes():
+    jsonl, _ = compile_plate(_plate(_raw(1, "Time"), _raw(2, "Time"), _raw(3, "Humidity")))
+    lines = [json.loads(l) for l in jsonl.strip().split("\n")]
+    comments = [(i, l["comment"]) for i, l in enumerate(lines) if "comment" in l]
+    # one comment per run of widgets, placed right before the run
+    assert [c for _, c in comments] == ["Time", "Humidity"]
+    assert lines[comments[0][0] + 1]["id"] == 1 and lines[comments[1][0] + 1]["id"] == 3
+
+
+def test_compile_emits_no_comments_for_a_plate_without_groups():
+    jsonl, _ = compile_plate(_plate(_raw(1), _raw(2)))
+    assert '"comment"' not in jsonl
+
+
+def test_widget_added_after_a_named_group_is_ungrouped_not_absorbed():
+    """Without its own comment line, a widget appended after a named group
+    would be merged into that group by the next import."""
+    jsonl, _ = compile_plate(_plate(_raw(1, "Time"), _raw(2)))
+    lines = [json.loads(l) for l in jsonl.strip().split("\n")]
+    assert [l["comment"] for l in lines if "comment" in l] == ["Time", "Ungrouped"]
+
+
+def test_groups_survive_compile_and_reimport(tmp_path):
+    plate = _plate(_raw(1, "Time"), _raw(2, "Time"), _raw(3, "Humidity"), _raw(4))
+    jsonl, yaml_text = compile_plate(plate)
+    (tmp_path / "p.jsonl").write_text(jsonl)
+    (tmp_path / "p.yaml").write_text(yaml_text)
+    again, _ = import_plate("p", str(tmp_path / "p.jsonl"), str(tmp_path / "p.yaml"), "square_480", "dark")
+    assert [w.group for w in again.pages[0].widgets] == ["Time", "Time", "Humidity", "Ungrouped"]
+    # and a second compile is stable (no extra comment lines appear)
+    jsonl2, _ = compile_plate(again)
+    assert jsonl2 == jsonl

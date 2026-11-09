@@ -60,6 +60,9 @@ class PlacedWidget:
     obj_id_start: int
     obj_id_end: int
     disabled: bool = False
+    # Name from the `{"comment": ...}` line that precedes the widget in the
+    # jsonl ("Office Light", ...). Widgets without one have an empty group.
+    group: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
