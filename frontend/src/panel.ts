@@ -356,6 +356,17 @@ export class OpenhaspBuilderPanel extends LitElement {
       justify-content: end;
       gap: 8px;
     }
+    .field {
+      display: grid;
+      gap: 4px;
+    }
+    .field > span {
+      color: var(--ohb-muted);
+      font-size: 11.5px;
+    }
+    .field .field-error {
+      color: var(--ohb-danger);
+    }
     .changes {
       padding: 12px;
       background: var(--ohb-panel-2);
@@ -446,6 +457,7 @@ export class OpenhaspBuilderPanel extends LitElement {
   @state() private drawer: 'history' | 'theme' | null = null;
   @state() private themes: Theme[] = [];
   @state() private dirty = false;
+  @state() private componentName = '';
   @state() private zoom = 1;
   @state() private autoFit = true;
   @state() private leftTab: 'layers' | 'add' | 'components' = 'layers';
@@ -754,13 +766,38 @@ export class OpenhaspBuilderPanel extends LitElement {
     });
   }
 
-  private async onSaveAsGroup() {
+  private onSaveAsGroup() {
     if (!this.plate || !this.activePage || this.selectedObjIds.size === 0) return;
+    this.componentName = '';
+    (this.renderRoot.querySelector('#component-dialog') as HTMLDialogElement | null)?.showModal();
+  }
+
+  private get componentNameError(): string {
+    const name = this.componentName.trim();
+    if (!name) return '';
+    if (name.length > 40) return 'Use 40 characters or fewer.';
+    if (this.composites.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
+      return 'A component with this name already exists.';
+    }
+    return '';
+  }
+
+  private closeComponentDialog() {
+    (this.renderRoot.querySelector('#component-dialog') as HTMLDialogElement | null)?.close();
+  }
+
+  private confirmSaveComponent(e: Event) {
+    e.preventDefault();
+    const name = this.componentName.trim();
+    if (!name || this.componentNameError) return;
+    this.closeComponentDialog();
+    void this.saveComponent(name);
+  }
+
+  private async saveComponent(name: string) {
+    if (!this.plate || !this.activePage) return;
     const selected = this.activePage.widgets.filter((w) => this.selectedObjIds.has(w.obj_id_start));
     if (selected.length === 0) return;
-
-    const name = prompt('Name this group:');
-    if (!name) return;
 
     const anchorX = Math.min(...selected.map((w) => w.x));
     const anchorY = Math.min(...selected.map((w) => w.y));
@@ -1052,7 +1089,10 @@ export class OpenhaspBuilderPanel extends LitElement {
       return;
     }
     if (this.showConfigEditor || this.rawEditorObjId !== null) return;
-    if ((this.renderRoot.querySelector('#publish-dialog') as HTMLDialogElement | null)?.open) return;
+    if (
+      (this.renderRoot.querySelectorAll('dialog[open]').length ?? 0) > 0
+    )
+      return;
     const typing = e.composedPath().some(
       (n) =>
         n instanceof HTMLElement &&
@@ -1442,6 +1482,38 @@ export class OpenhaspBuilderPanel extends LitElement {
             <button class="btn primary" @click=${this.confirmPublish}>Publish</button>
           </div>
         </div>
+      </dialog>
+
+      <dialog id="component-dialog">
+        <form class="dlg" @submit=${this.confirmSaveComponent}>
+          <h2>Save selection as component</h2>
+          <p>
+            ${this.selectedObjIds.size} layer${this.selectedObjIds.size === 1 ? '' : 's'} will be saved, so you can add
+            them to any plate from the Components tab.
+          </p>
+          <label class="field">
+            <span>Name</span>
+            <input
+              class="txt"
+              placeholder="e.g. Toggle card"
+              autocomplete="off"
+              aria-invalid=${this.componentNameError !== ''}
+              .value=${this.componentName}
+              @input=${(e: Event) => (this.componentName = (e.target as HTMLInputElement).value)}
+            />
+            ${this.componentNameError ? html`<span class="field-error" role="alert">${this.componentNameError}</span>` : nothing}
+          </label>
+          <div class="actions">
+            <button type="button" class="btn" @click=${this.closeComponentDialog}>Cancel</button>
+            <button
+              type="submit"
+              class="btn primary"
+              ?disabled=${this.componentName.trim() === '' || this.componentNameError !== ''}
+            >
+              Save component
+            </button>
+          </div>
+        </form>
       </dialog>
 
       ${this.rawEditorWidget
