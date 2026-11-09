@@ -407,11 +407,17 @@ export class Canvas extends LitElement {
       display: block;
       position: relative;
     }
+    .zoomer {
+      position: relative;
+    }
     .surface {
       position: relative;
       background: #111;
       border: 1px solid var(--divider-color, #333);
       overflow: hidden;
+      transform-origin: top left;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+      border-radius: 2px;
     }
     .widget {
       position: absolute;
@@ -445,6 +451,9 @@ export class Canvas extends LitElement {
   @property({ attribute: false }) theme: Theme | null = null;
   @property({ attribute: false }) evaluatedValues: Record<number, Record<string, string>> = {};
   @property({ attribute: false }) selectedIds: Set<number> = new Set();
+  // Editor zoom (1 = device pixels). The surface is scaled with a CSS transform,
+  // so every pointer delta/offset below is divided by it.
+  @property({ type: Number }) zoom = 1;
 
   private onSurfaceDragOver(e: DragEvent) {
     e.preventDefault();
@@ -453,8 +462,8 @@ export class Canvas extends LitElement {
   private onSurfaceDrop(e: DragEvent) {
     e.preventDefault();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const x = snap(e.clientX - rect.left);
-    const y = snap(e.clientY - rect.top);
+    const x = snap((e.clientX - rect.left) / this.zoom);
+    const y = snap((e.clientY - rect.top) / this.zoom);
 
     const compositeId = e.dataTransfer?.getData('application/x-ohb-composite-id');
     if (compositeId) {
@@ -508,8 +517,8 @@ export class Canvas extends LitElement {
       })
     );
 
-    const surface = this.renderRoot.querySelector('.surface') as HTMLElement;
-    const surfaceRect = surface.getBoundingClientRect();
+    const surfaceW = this.deviceProfile.width;
+    const surfaceH = this.deviceProfile.height;
     const startX = e.clientX;
     const startY = e.clientY;
 
@@ -521,13 +530,13 @@ export class Canvas extends LitElement {
     );
 
     const onMove = (moveEvent: PointerEvent) => {
-      const dx = moveEvent.clientX - startX;
-      const dy = moveEvent.clientY - startY;
+      const dx = (moveEvent.clientX - startX) / this.zoom;
+      const dy = (moveEvent.clientY - startY) / this.zoom;
       const moves = [...origins.entries()].map(([objId, origin]) => {
         let newX = snap(origin.x + dx);
         let newY = snap(origin.y + dy);
-        newX = Math.max(0, Math.min(newX, surfaceRect.width - origin.w));
-        newY = Math.max(0, Math.min(newY, surfaceRect.height - origin.h));
+        newX = Math.max(0, Math.min(newX, surfaceW - origin.w));
+        newY = Math.max(0, Math.min(newY, surfaceH - origin.h));
         return { objId, x: newX, y: newY };
       });
       this.dispatchEvent(
@@ -557,14 +566,32 @@ export class Canvas extends LitElement {
     );
   }
 
+  private onSurfacePointerMove(e: PointerEvent) {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    this.dispatchEvent(
+      new CustomEvent('canvas-cursor', {
+        detail: {
+          x: Math.max(0, Math.round((e.clientX - rect.left) / this.zoom)),
+          y: Math.max(0, Math.round((e.clientY - rect.top) / this.zoom)),
+        },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   render() {
     if (!this.page || !this.deviceProfile) return html``;
+    const w = this.deviceProfile.width;
+    const h = this.deviceProfile.height;
     return html`
+      <div class="zoomer" style="width:${w * this.zoom + 2}px;height:${h * this.zoom + 2}px">
       <div
         class="surface"
-        style="width:${this.deviceProfile.width}px;height:${this.deviceProfile.height}px;background:${deviceColor(this.page.background)}"
+        style="width:${w}px;height:${h}px;background:${deviceColor(this.page.background)};transform:scale(${this.zoom})"
         @dragover=${this.onSurfaceDragOver}
         @drop=${this.onSurfaceDrop}
+        @pointermove=${this.onSurfacePointerMove}
         @pointerdown=${() =>
           this.dispatchEvent(
             new CustomEvent('widget-select', { detail: { objIds: [] }, bubbles: true, composed: true })
@@ -593,6 +620,7 @@ export class Canvas extends LitElement {
             >${w.widget_def_id === 'raw' ? rawBody(w, this.evaluatedValues[w.obj_id_start]) : w.widget_def_id}</div>
           `;
         })}
+      </div>
       </div>
     `;
   }

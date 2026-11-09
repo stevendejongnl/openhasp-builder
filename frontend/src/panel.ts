@@ -1,4 +1,4 @@
-import { LitElement, html, css, type PropertyValues } from 'lit';
+import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import './canvas/WidgetPalette';
 import './canvas/Canvas';
@@ -9,6 +9,8 @@ import './canvas/ThemeEditor';
 import './canvas/RawEditor';
 import './canvas/ConfigEditor';
 import * as api from './api/client';
+import { tokens, controls } from './ui/styles';
+import { icon } from './ui/icons';
 import type {
   Plate,
   WidgetDef,
@@ -35,146 +37,396 @@ function firstVisiblePageId(plate: Plate): number | null {
 
 @customElement('openhasp-builder-panel')
 export class OpenhaspBuilderPanel extends LitElement {
-  static styles = css`
+  static styles = [
+    tokens,
+    controls,
+    css`
     :host {
-      display: flex;
-      flex-direction: column;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
       height: 100vh;
-      font-family: var(--paper-font-body1_-_font-family, sans-serif);
-      color: var(--primary-text-color, #eee);
-      background: var(--primary-background-color, #1c1c1c);
-    }
-    .toolbar {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 12px;
-      border-bottom: 1px solid var(--divider-color, #333);
-    }
-    .toolbar input[type='text'] {
-      background: var(--secondary-background-color, #2c2c2c);
-      border: 1px solid var(--divider-color, #333);
-      color: inherit;
-      padding: 4px 8px;
-      border-radius: 3px;
-    }
-    .tabs {
-      display: flex;
-      gap: 4px;
-    }
-    .tab {
-      padding: 4px 10px;
-      border: 1px solid var(--divider-color, #333);
-      border-radius: 3px;
-      cursor: pointer;
+      font-family: var(--ohb-font);
       font-size: 13px;
-    }
-    .tab.active {
-      background: var(--primary-color, #03a9f4);
-      color: #fff;
-    }
-    button {
-      padding: 6px 14px;
-      border: none;
-      border-radius: 3px;
-      background: var(--primary-color, #03a9f4);
-      color: #fff;
-      cursor: pointer;
-      font-size: 13px;
-    }
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-    .body {
-      display: flex;
-      flex: 1;
+      color: var(--ohb-text);
+      background: var(--ohb-bg);
       overflow: hidden;
     }
-    .canvas-area {
-      flex: 1;
-      overflow: auto;
-      padding: 20px;
+
+    /* ---------- top bar ---------- */
+    .top {
+      display: grid;
+      grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
+      align-items: center;
+      gap: 16px;
+      min-height: 52px;
+      padding: 0 12px;
+      background: var(--ohb-panel);
+      border-bottom: 1px solid var(--ohb-border);
     }
-    .side-stack {
-      display: flex;
-      flex-direction: column;
-    }
-    .errors {
-      margin-left: auto;
-      color: #ff6b6b;
-      font-size: 12px;
-      max-width: 400px;
-    }
-    .status {
-      font-size: 12px;
-      color: var(--secondary-text-color, #888);
-    }
-    .notice {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
+    .plate {
+      display: grid;
+      grid-auto-flow: column;
+      align-items: center;
       gap: 12px;
-      padding: 24px;
-      max-width: 640px;
     }
-    .error-text {
-      color: #ff6b6b;
+    .plate .name {
+      font-weight: 600;
       font-size: 14px;
     }
-    code {
-      font-size: 12px;
-      background: var(--secondary-background-color, #2c2c2c);
-      padding: 1px 4px;
-      border-radius: 3px;
+    .tabs {
+      display: grid;
+      grid-auto-flow: column;
+      gap: 2px;
+      align-items: center;
+      overflow-x: auto;
     }
-    .warnings {
+    .tab {
+      height: var(--ohb-ctl);
+      padding: 0 12px;
+      border: 0;
+      background: transparent;
+      border-radius: var(--ohb-r-sm);
+      color: var(--ohb-muted);
+      white-space: nowrap;
+    }
+    .tab:hover {
+      background: var(--ohb-panel-2);
+      color: var(--ohb-text);
+    }
+    .tab[aria-selected='true'] {
+      background: var(--ohb-accent-soft);
+      color: var(--ohb-accent);
+      font-weight: 600;
+    }
+    .split {
+      display: grid;
+      grid-auto-flow: column;
+      position: relative;
+    }
+    .split .btn:first-child {
+      border-radius: var(--ohb-r-sm) 0 0 var(--ohb-r-sm);
+    }
+    .split .btn:nth-child(2) {
+      border-radius: 0 var(--ohb-r-sm) var(--ohb-r-sm) 0;
+      border-left-color: rgba(0, 0, 0, 0.25);
+      width: 30px;
+      padding: 0;
+      justify-content: center;
+    }
+    .menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      right: 0;
+      min-width: 280px;
+      z-index: 30;
+      padding: 4px;
+      background: var(--ohb-panel);
+      border: 1px solid var(--ohb-border);
+      border-radius: var(--ohb-r-md);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+      display: grid;
+    }
+    .menu button {
+      display: grid;
+      grid-template-columns: 20px 1fr auto;
+      gap: 8px;
+      align-items: center;
+      padding: 7px 8px;
+      text-align: left;
+      border: 0;
+      background: transparent;
+      border-radius: var(--ohb-r-sm);
+    }
+    .menu button:hover:not(:disabled),
+    .menu button:focus-visible {
+      background: var(--ohb-accent-soft);
+    }
+    .menu button:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+    .menu hr {
+      border: 0;
+      border-top: 1px solid var(--ohb-border);
+      margin: 4px 0;
+      width: 100%;
+    }
+
+    /* ---------- banners ---------- */
+    .banner {
+      padding: 6px 16px;
       font-size: 12px;
-      color: #ffb74d;
-      max-width: 400px;
-      max-height: 3.6em;
+      border-bottom: 1px solid var(--ohb-border);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    .banner.error {
+      color: var(--ohb-danger);
+      background: color-mix(in srgb, var(--ohb-danger) 10%, transparent);
+    }
+    .banner.warn {
+      color: var(--ohb-warn);
+      background: color-mix(in srgb, var(--ohb-warn) 10%, transparent);
+    }
+    .banner:empty {
+      display: none;
+    }
+
+    /* ---------- body ---------- */
+    .body {
+      display: grid;
+      grid-template-columns: 288px minmax(0, 1fr) 316px;
+      min-height: 0;
+    }
+    .left,
+    .right {
+      background: var(--ohb-panel);
+      min-height: 0;
+      display: grid;
+    }
+    .left {
+      border-right: 1px solid var(--ohb-border);
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+    .right {
+      border-left: 1px solid var(--ohb-border);
+      grid-template-rows: minmax(0, 1fr);
+    }
+    .rail-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-bottom: 1px solid var(--ohb-border);
+    }
+    .rail-tabs button {
+      height: 40px;
+      border: 0;
+      background: transparent;
+      color: var(--ohb-muted);
+      border-bottom: 2px solid transparent;
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+    .rail-tabs button[aria-selected='true'] {
+      color: var(--ohb-text);
+      border-bottom-color: var(--ohb-accent);
+    }
+    .rail-body {
       overflow: auto;
+      min-height: 0;
+    }
+
+    /* ---------- stage ---------- */
+    .stage {
+      position: relative;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      min-width: 0;
+      min-height: 0;
+      background: var(--ohb-bg);
+    }
+    .stagebar {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 16px;
+      padding: 6px 12px;
+    }
+    .stagebar .info {
+      color: var(--ohb-muted);
+      font-size: 12px;
+    }
+    .zoom {
+      display: grid;
+      grid-auto-flow: column;
+      align-items: center;
+      gap: 2px;
+      background: var(--ohb-panel);
+      border: 1px solid var(--ohb-border);
+      border-radius: var(--ohb-r-sm);
+      padding: 2px;
+    }
+    .zoom output {
+      min-width: 48px;
+      text-align: center;
+      font: 500 12px var(--ohb-mono);
+    }
+    .zoom .btn {
+      min-height: 28px;
+      width: 28px;
+    }
+    .zoom .btn.fit {
+      width: auto;
+      padding: 0 8px;
+    }
+    .canvas-area {
+      display: grid;
+      overflow: auto;
+      min-height: 0;
+      padding: 32px;
+      background-image: radial-gradient(var(--ohb-border) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+    .canvas-area > ohb-canvas {
+      margin: auto;
+    }
+    .drawer {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 320px;
+      z-index: 10;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      background: var(--ohb-panel);
+      border-left: 1px solid var(--ohb-border);
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+    }
+    .drawer header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      padding: 8px 8px 8px 16px;
+      border-bottom: 1px solid var(--ohb-border);
+      font-weight: 600;
+    }
+    .drawer .drawer-body {
+      overflow: auto;
+      min-height: 0;
+    }
+    .drawer ohb-version-history,
+    .drawer ohb-theme-editor {
+      width: auto;
+      border: 0;
+      display: block;
+    }
+
+    /* ---------- status bar ---------- */
+    .statusbar {
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: start;
+      align-items: center;
+      gap: 24px;
+      min-height: 28px;
+      padding: 0 16px;
+      background: var(--ohb-panel);
+      border-top: 1px solid var(--ohb-border);
+      color: var(--ohb-muted);
+      font-size: 12px;
+    }
+    .statusbar .mono {
+      font: 400 11.5px var(--ohb-mono);
+    }
+
+    /* ---------- dialog ---------- */
+    dialog {
+      border: 1px solid var(--ohb-border);
+      border-radius: 14px;
+      background: var(--ohb-panel);
+      color: var(--ohb-text);
+      padding: 0;
+      width: min(520px, 92vw);
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+    }
+    dialog::backdrop {
+      background: rgba(0, 0, 0, 0.55);
+    }
+    .dlg {
+      display: grid;
+      gap: 16px;
+      padding: 24px;
+    }
+    .dlg h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+    .dlg p {
+      margin: 0;
+      color: var(--ohb-muted);
+    }
+    .dlg .actions {
+      display: grid;
+      grid-auto-flow: column;
+      justify-content: end;
+      gap: 8px;
+    }
+    .changes {
+      padding: 12px;
+      background: var(--ohb-panel-2);
+      border: 1px solid var(--ohb-border);
+      border-radius: var(--ohb-r-md);
+      font: 400 12px var(--ohb-mono);
+    }
+
+    /* ---------- picker (no plate open) ---------- */
+    .picker {
+      grid-row: 1 / -1;
+      overflow: auto;
+    }
+    .notice {
+      display: grid;
+      gap: 24px;
+      padding: 32px 24px;
+      max-width: 640px;
+      margin: 0 auto;
+      align-content: start;
     }
     .notice h2 {
       margin: 0;
-      font-size: 20px;
+      font-size: 22px;
     }
     .notice h3 {
-      margin: 0 0 6px;
-      font-size: 14px;
-      color: var(--secondary-text-color, #888);
+      margin: 0 0 8px;
+      font-size: 12px;
+      color: var(--ohb-muted);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .notice section {
-      width: 100%;
+      letter-spacing: 0.06em;
     }
     .plate-list {
       list-style: none;
       margin: 0;
       padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+      display: grid;
+      gap: 8px;
     }
     .plate-list li {
-      display: flex;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      padding: 8px 12px;
+      background: var(--ohb-panel);
+      border: 1px solid var(--ohb-border);
+      border-radius: var(--ohb-r-md);
     }
     .new-plate {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr auto;
       gap: 8px;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
-    .notice input[type='text'] {
-      background: var(--secondary-background-color, #2c2c2c);
-      border: 1px solid var(--divider-color, #333);
-      color: inherit;
-      padding: 6px 8px;
-      border-radius: 3px;
+    .status {
+      font-size: 12px;
+      color: var(--ohb-muted);
     }
-  `;
+    .error-text {
+      color: var(--ohb-danger);
+      font-size: 14px;
+    }
+    code {
+      font: 400 12px var(--ohb-mono);
+      background: var(--ohb-panel-2);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+  `,
+  ];
 
   // Set by HA's panel resolver, not by us. Needed for authenticated REST calls.
   @property({ attribute: false }) public hass?: { callApi<T>(m: string, p: string, b?: unknown): Promise<T> };
@@ -191,9 +443,16 @@ export class OpenhaspBuilderPanel extends LitElement {
   @state() private saving = false;
   @state() private confirmLiveImport = false;
   @state() private versions: Version[] = [];
-  @state() private showVersions = false;
+  @state() private drawer: 'history' | 'theme' | null = null;
   @state() private themes: Theme[] = [];
-  @state() private showThemeEditor = false;
+  @state() private dirty = false;
+  @state() private zoom = 1;
+  @state() private autoFit = true;
+  @state() private leftTab: 'layers' | 'add' | 'components' = 'layers';
+  @state() private menuOpen = false;
+  @state() private cursor: { x: number; y: number } | null = null;
+  private resizeObserver?: ResizeObserver;
+  private observedArea: Element | null = null;
   @state() private composites: CompositeTemplate[] = [];
   @state() private rawEditorObjId: number | null = null;
   @state() private loadError = '';
@@ -224,6 +483,8 @@ export class OpenhaspBuilderPanel extends LitElement {
 
   connectedCallback() {
     super.connectedCallback();
+    window.addEventListener('keydown', this.onWindowKeyDown);
+    window.addEventListener('pointerdown', this.onWindowPointerDown);
     // If `hass` never arrives, every code path below is dead and the panel
     // would sit on "Loading..." forever with nothing in the console. Say so
     // instead, and report which bundle is actually running so a stale cached
@@ -239,6 +500,9 @@ export class OpenhaspBuilderPanel extends LitElement {
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    window.removeEventListener('keydown', this.onWindowKeyDown);
+    window.removeEventListener('pointerdown', this.onWindowPointerDown);
+    this.resizeObserver?.disconnect();
     if (this.hassTimer !== undefined) window.clearTimeout(this.hassTimer);
   }
 
@@ -322,6 +586,7 @@ export class OpenhaspBuilderPanel extends LitElement {
 
   private setPlate(plate: Plate) {
     this.plate = plate;
+    this.dirty = false;
     this.activePageId = firstVisiblePageId(plate);
     this.evaluatedValues = {};
     void this.refreshTemplates();
@@ -430,6 +695,7 @@ export class OpenhaspBuilderPanel extends LitElement {
     const next: Plate = { ...this.plate, pages: this.plate.pages.map((p) => ({ ...p, widgets: [...p.widgets] })) };
     fn(next);
     this.plate = next;
+    this.dirty = true;
     this.publishErrors = [];
   }
 
@@ -555,6 +821,7 @@ export class OpenhaspBuilderPanel extends LitElement {
         this.plate.id, jsonl, yaml, this.plate.device_profile_id, this.plate.theme_id
       );
       this.plate = plate;
+      this.dirty = true;
       this.configWarnings = warnings;
       this.publishErrors = [];
       this.statusMessage = 'Previewed unsaved config edits -- Save Draft or Publish to keep them.';
@@ -621,6 +888,7 @@ export class OpenhaspBuilderPanel extends LitElement {
     this.statusMessage = 'Saving...';
     try {
       this.plate = await api.savePlate(this.plate);
+      this.dirty = false;
       this.statusMessage = 'Saved as draft.';
     } catch (err) {
       this.statusMessage = `Save failed: ${(err as Error).message}`;
@@ -636,6 +904,7 @@ export class OpenhaspBuilderPanel extends LitElement {
     this.publishErrors = [];
     try {
       this.plate = await api.savePlate(this.plate);
+      this.dirty = false;
       const result = await api.publishPlate(this.plateId);
       if (result.errors.length > 0) {
         this.publishErrors = result.errors;
@@ -659,6 +928,7 @@ export class OpenhaspBuilderPanel extends LitElement {
     this.statusMessage = `Restoring version ${versionNumber}...`;
     try {
       this.plate = await api.restoreVersion(this.plateId, versionNumber);
+      this.dirty = false;
       this.selectedObjIds = new Set();
       this.publishErrors = [];
       this.activePageId = firstVisiblePageId(this.plate);
@@ -690,6 +960,154 @@ export class OpenhaspBuilderPanel extends LitElement {
     } catch (err) {
       this.statusMessage = `Theme save failed: ${(err as Error).message}`;
     }
+  }
+
+  // ---------- shell behaviour (zoom, menu, dialog, keyboard) ----------
+
+  private renderMenu() {
+    const item = (iconName: string, label: string, onClick: () => void, opts: { kbd?: string; disabled?: boolean } = {}) => html`
+      <button role="menuitem" ?disabled=${opts.disabled} @click=${onClick}>
+        ${icon(iconName)}<span>${label}</span>${opts.kbd ? html`<kbd>${opts.kbd}</kbd>` : html`<span></span>`}
+      </button>
+    `;
+    const close = () => (this.menuOpen = false);
+    return html`
+      <div class="menu" role="menu" @keydown=${this.onMenuKeyDown}>
+        ${item('down', this.confirmLiveImport ? 'Click again to replace this plate' : 'Import live from device', () => {
+          if (this.confirmLiveImport) close();
+          void this.onImportLive();
+        }, { disabled: this.saving })}
+        ${item('history', 'Version history', () => { this.drawer = 'history'; close(); })}
+        ${item('palette', 'Theme…', () => { this.drawer = 'theme'; close(); })}
+        ${item('code', 'Edit config (jsonl / yaml)', () => { close(); void this.onOpenConfigEditor(); })}
+        <hr />
+        ${item('box', 'Save selection as component', () => { close(); void this.onSaveAsGroup(); }, { disabled: this.selectedObjIds.size === 0 })}
+        ${item('up', 'Save draft', () => { close(); void this.onSave(); }, { kbd: 'Ctrl S', disabled: this.saving })}
+      </div>
+    `;
+  }
+
+  private onMenuKeyDown = (e: KeyboardEvent) => {
+    const items = Array.from((e.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+    const i = items.indexOf(this.shadowRoot!.activeElement as HTMLButtonElement);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items[(i + 1) % items.length]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[(i - 1 + items.length) % items.length]?.focus();
+    }
+  };
+
+  private openPublishDialog() {
+    (this.renderRoot.querySelector('#publish-dialog') as HTMLDialogElement | null)?.showModal();
+  }
+
+  private closePublishDialog() {
+    (this.renderRoot.querySelector('#publish-dialog') as HTMLDialogElement | null)?.close();
+  }
+
+  private confirmPublish() {
+    this.closePublishDialog();
+    void this.onPublish();
+  }
+
+  private fitZoom(): number {
+    const area = this.renderRoot.querySelector('.canvas-area') as HTMLElement | null;
+    const profile = this.plate ? DEVICE_PROFILES[this.plate.device_profile_id] : null;
+    if (!area || !profile) return 1;
+    const fit = Math.min((area.clientWidth - 66) / profile.width, (area.clientHeight - 66) / profile.height);
+    return Math.max(0.5, Math.min(3, Math.floor(fit * 4) / 4));
+  }
+
+  private setZoom(z: number, auto: boolean) {
+    this.zoom = Math.max(0.5, Math.min(3, z));
+    this.autoFit = auto;
+  }
+
+  protected updated() {
+    const area = this.renderRoot.querySelector('.canvas-area');
+    if (area !== this.observedArea) {
+      this.resizeObserver?.disconnect();
+      this.observedArea = area;
+      if (area) {
+        this.resizeObserver ??= new ResizeObserver(() => {
+          if (this.autoFit) this.zoom = this.fitZoom();
+        });
+        this.resizeObserver.observe(area);
+        if (this.autoFit) this.zoom = this.fitZoom();
+      }
+    }
+  }
+
+  private onWindowKeyDown = (e: KeyboardEvent) => {
+    if (!this.plate) return;
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      void this.onSave();
+      return;
+    }
+    if (e.key === 'Escape') {
+      this.menuOpen = false;
+      return;
+    }
+    if (this.showConfigEditor || this.rawEditorObjId !== null) return;
+    if ((this.renderRoot.querySelector('#publish-dialog') as HTMLDialogElement | null)?.open) return;
+    const typing = e.composedPath().some(
+      (n) =>
+        n instanceof HTMLElement &&
+        (n.tagName === 'INPUT' || n.tagName === 'TEXTAREA' || n.tagName === 'SELECT' || n.isContentEditable)
+    );
+    if (typing) return;
+    const step = e.shiftKey ? 5 : 1;
+    const delta: Record<string, [number, number]> = {
+      ArrowLeft: [-step, 0],
+      ArrowRight: [step, 0],
+      ArrowUp: [0, -step],
+      ArrowDown: [0, step],
+    };
+    const d = delta[e.key];
+    if (d) {
+      e.preventDefault();
+      this.nudgeSelected(d[0], d[1]);
+    }
+  };
+
+  private onWindowPointerDown = (e: PointerEvent) => {
+    if (!this.menuOpen) return;
+    const inside = e.composedPath().some((n) => n instanceof HTMLElement && n.classList.contains('split'));
+    if (!inside) this.menuOpen = false;
+  };
+
+  // Keyboard/button alternative to dragging (WCAG 2.2 dragging movements).
+  private nudgeSelected(dx: number, dy: number) {
+    if (this.selectedObjIds.size === 0) return;
+    this.mutatePlate((plate) => {
+      const page = plate.pages.find((p) => p.id === this.activePageId);
+      if (!page) return;
+      page.widgets = page.widgets.map((w) =>
+        this.selectedObjIds.has(w.obj_id_start)
+          ? { ...w, x: Math.max(0, w.x + dx), y: Math.max(0, w.y + dy) }
+          : w
+      );
+    });
+  }
+
+  private onWidgetAdd(e: CustomEvent) {
+    const def = this.widgetDefs[e.detail.widgetDefId];
+    if (!def) return;
+    this.onWidgetPlace(
+      new CustomEvent('widget-place', {
+        detail: { widgetDefId: def.type, x: 10, y: 10, w: def.default_w, h: def.default_h },
+      })
+    );
+    this.selectedObjIds = new Set([nextTempObjId + 1]);
+  }
+
+  private onCompositeAdd(e: CustomEvent) {
+    this.onCompositePlace(
+      new CustomEvent('composite-place', { detail: { compositeId: e.detail.compositeId, x: 10, y: 10 } })
+    );
   }
 
   private invalidObjIds(): Set<number> {
@@ -729,7 +1147,7 @@ export class OpenhaspBuilderPanel extends LitElement {
                   ${stored.map(
                     (p) => html`
                       <li>
-                        <button @click=${() => this.openPlate(p.id)} ?disabled=${!!this.pickerBusy}>
+                        <button class="btn primary" @click=${() => this.openPlate(p.id)} ?disabled=${!!this.pickerBusy}>
                           ${this.pickerBusy === p.id ? 'Opening...' : 'Open'}
                         </button>
                         <span>${p.display_name}</span>
@@ -754,7 +1172,7 @@ export class OpenhaspBuilderPanel extends LitElement {
                   ${importable.map(
                     (p) => html`
                       <li>
-                        <button @click=${() => this.onImport(p.id)} ?disabled=${!!this.pickerBusy}>
+                        <button class="btn primary" @click=${() => this.onImport(p.id)} ?disabled=${!!this.pickerBusy}>
                           ${this.pickerBusy === p.id ? 'Importing...' : 'Import'}
                         </button>
                         <code>${p.id}</code>
@@ -770,12 +1188,14 @@ export class OpenhaspBuilderPanel extends LitElement {
           <h3>Start fresh</h3>
           <div class="new-plate">
             <input
+              class="txt"
               type="text"
               placeholder="plate id (e.g. kitchen)"
               .value=${this.newPlateId}
               @input=${(e: Event) => (this.newPlateId = (e.target as HTMLInputElement).value)}
             />
             <button
+              class="btn primary"
               @click=${this.onCreatePlate}
               ?disabled=${!newIdValid || newIdTaken || !!this.pickerBusy}
             >
@@ -802,23 +1222,36 @@ export class OpenhaspBuilderPanel extends LitElement {
   }
 
   render() {
-    if (!this.plate) return this.renderPicker();
+    if (!this.plate) return html`<div class="picker">${this.renderPicker()}</div>`;
     const profile = DEVICE_PROFILES[this.plate.device_profile_id];
     const widgetDef = this.selectedWidget ? this.widgetDefs[this.selectedWidget.widget_def_id] : null;
+    const selected = this.selectedWidget;
+    const dirty = this.dirty;
+    const leftTabs: [typeof this.leftTab, string, string][] = [
+      ['layers', 'Layers', 'layers'],
+      ['add', 'Add', 'plus'],
+      ['components', 'Components', 'box'],
+    ];
 
     return html`
-      <div class="toolbar">
-        <button title="Back to plate list" @click=${this.backToPicker} ?disabled=${this.saving}>
-          ←
-        </button>
-        <strong>${this.plate.display_name}</strong>
-        <div class="tabs">
+      <header class="top">
+        <div class="plate">
+          <button class="btn icon ghost" aria-label="Back to plate list" @click=${this.backToPicker} ?disabled=${this.saving}>
+            ${icon('arrow-left')}
+          </button>
+          <span class="name">${this.plate.display_name}</span>
+          ${profile ? html`<span class="chip" title="Device profile">${profile.width} × ${profile.height}</span>` : nothing}
+        </div>
+
+        <nav class="tabs" role="tablist" aria-label="Pages">
           ${this.plate.pages
             .filter((p) => p.id !== 0)
             .map(
               (p) => html`
-                <div
-                  class="tab ${p.id === this.activePageId ? 'active' : ''}"
+                <button
+                  class="tab"
+                  role="tab"
+                  aria-selected=${p.id === this.activePageId}
                   @click=${() => {
                     this.activePageId = p.id;
                     this.selectedObjIds = new Set();
@@ -826,97 +1259,198 @@ export class OpenhaspBuilderPanel extends LitElement {
                   }}
                 >
                   Page ${p.id}
-                </div>
+                </button>
               `
             )}
-        </div>
-        <button @click=${this.onSave} ?disabled=${this.saving}>Save Draft</button>
-        <button @click=${this.onPublish} ?disabled=${this.saving}>Publish</button>
-        <button @click=${() => (this.showVersions = !this.showVersions)}>
-          ${this.showVersions ? 'Hide' : 'Show'} History
-        </button>
-        <button @click=${() => (this.showThemeEditor = !this.showThemeEditor)}>
-          ${this.showThemeEditor ? 'Hide' : 'Show'} Theme
-        </button>
-        <button @click=${this.onSaveAsGroup} ?disabled=${this.selectedObjIds.size === 0}>
-          Save as Group
-        </button>
-        <button @click=${() => void this.refreshTemplates()}>Refresh Live Values</button>
-        <button @click=${this.onOpenConfigEditor}>Edit Config</button>
+        </nav>
+
+        <span></span>
+
         <button
-          title="Replace this plate with the latest files on the device. The current state is saved to history first."
-          ?disabled=${this.saving}
-          @click=${() => void this.onImportLive()}
-          @blur=${() => (this.confirmLiveImport = false)}
+          class="btn icon ghost"
+          aria-label="Refresh live values"
+          title="Re-evaluate the Home Assistant templates"
+          @click=${() => void this.refreshTemplates()}
         >
-          ${this.confirmLiveImport ? 'Click again to confirm' : 'Import live'}
+          ${icon('refresh')}
         </button>
-        <span class="status">${this.statusMessage}</span>
-        ${this.publishErrors.length > 0
-          ? html`<div class="errors">${this.publishErrors.join(' · ')}</div>`
-          : this.importWarnings.length > 0
-            ? html`<div class="warnings" title=${this.importWarnings.join('\n')}>
-                ${this.importWarnings.length} import warning(s): ${this.importWarnings.join(' · ')}
-              </div>`
-            : html``}
-      </div>
-      <div class="body">
-        <ohb-widget-palette .widgets=${this.widgetDefs} .composites=${this.composites}></ohb-widget-palette>
-        <div class="canvas-area">
-          ${this.activePage && profile
-            ? html`
-                <ohb-canvas
-                  .page=${this.activePage}
-                  .deviceProfile=${profile}
-                  .widgetDefs=${this.widgetDefs}
-                  .invalidObjIds=${this.invalidObjIds()}
-                  .theme=${this.activeTheme}
-                  .evaluatedValues=${this.evaluatedValues}
-                  .selectedIds=${this.selectedObjIds}
-                  @widget-place=${this.onWidgetPlace}
-                  @composite-place=${this.onCompositePlace}
-                  @widget-select=${this.onWidgetSelect}
-                  @widget-move=${this.onWidgetMove}
-                  @widget-edit-raw=${this.onEditRaw}
-                ></ohb-canvas>
-              `
-            : html``}
+        <span class="chip ${dirty ? 'draft' : ''}" role="status">
+          <span class="dot"></span>${dirty ? 'Unsaved changes' : 'No unsaved changes'}
+        </span>
+        <div class="split">
+          <button class="btn primary" @click=${this.openPublishDialog} ?disabled=${this.saving}>
+            ${icon('up')}Publish
+          </button>
+          <button
+            class="btn primary"
+            aria-label="More actions"
+            aria-haspopup="menu"
+            aria-expanded=${this.menuOpen}
+            @click=${(e: Event) => {
+              e.stopPropagation();
+              this.menuOpen = !this.menuOpen;
+            }}
+          >
+            ${icon('chev-down')}
+          </button>
+          ${this.menuOpen ? this.renderMenu() : nothing}
         </div>
-        <div class="side-stack">
-          <ohb-layer-list
-            .page=${this.activePage}
-            .selectedIds=${this.selectedObjIds}
-            @layer-select=${this.onWidgetSelect}
-          ></ohb-layer-list>
+      </header>
+
+      <div class="banners">
+        ${this.publishErrors.length > 0
+          ? html`<div class="banner error" role="alert">
+              <span>${this.publishErrors.join(' · ')}</span>
+            </div>`
+          : nothing}
+        ${this.importWarnings.length > 0
+          ? html`<div class="banner warn" title=${this.importWarnings.join('\n')}>
+              <span>${this.importWarnings.length} import warning(s): ${this.importWarnings.join(' · ')}</span>
+              <button class="btn ghost" style="min-height:24px" @click=${() => (this.importWarnings = [])}>Dismiss</button>
+            </div>`
+          : nothing}
+      </div>
+
+      <div class="body">
+        <aside class="left" aria-label="Plate contents">
+          <div class="rail-tabs" role="tablist">
+            ${leftTabs.map(
+              ([id, label, ic]) => html`<button
+                role="tab"
+                aria-selected=${this.leftTab === id}
+                @click=${() => (this.leftTab = id)}
+              >
+                ${icon(ic)}${label}
+              </button>`
+            )}
+          </div>
+          <div class="rail-body">
+            ${this.leftTab === 'layers'
+              ? html`<ohb-layer-list
+                  .page=${this.activePage}
+                  .selectedIds=${this.selectedObjIds}
+                  .evaluatedValues=${this.evaluatedValues}
+                  @layer-select=${this.onWidgetSelect}
+                ></ohb-layer-list>`
+              : html`<ohb-widget-palette
+                  .mode=${this.leftTab}
+                  .widgets=${this.widgetDefs}
+                  .composites=${this.composites}
+                  @widget-add=${this.onWidgetAdd}
+                  @composite-add=${this.onCompositeAdd}
+                ></ohb-widget-palette>`}
+          </div>
+        </aside>
+
+        <main class="stage">
+          <div class="stagebar">
+            <div class="zoom" role="group" aria-label="Zoom">
+              <button class="btn icon ghost" aria-label="Zoom out" @click=${() => this.setZoom(this.zoom - 0.25, false)}>
+                ${icon('minus')}
+              </button>
+              <output aria-live="polite">${Math.round(this.zoom * 100)}%</output>
+              <button class="btn icon ghost" aria-label="Zoom in" @click=${() => this.setZoom(this.zoom + 0.25, false)}>
+                ${icon('plus')}
+              </button>
+              <button class="btn ghost fit" aria-pressed=${this.autoFit} @click=${() => this.setZoom(this.fitZoom(), true)}>
+                ${icon('fit')}Fit
+              </button>
+            </div>
+            <div class="info">Click to select · Shift-click adds · arrow keys nudge 1 px (⇧ 5 px) · double-click opens the raw editor</div>
+            <span></span>
+          </div>
+          <div class="canvas-area">
+            ${this.activePage && profile
+              ? html`
+                  <ohb-canvas
+                    .page=${this.activePage}
+                    .deviceProfile=${profile}
+                    .widgetDefs=${this.widgetDefs}
+                    .invalidObjIds=${this.invalidObjIds()}
+                    .theme=${this.activeTheme}
+                    .evaluatedValues=${this.evaluatedValues}
+                    .selectedIds=${this.selectedObjIds}
+                    .zoom=${this.zoom}
+                    @widget-place=${this.onWidgetPlace}
+                    @composite-place=${this.onCompositePlace}
+                    @widget-select=${this.onWidgetSelect}
+                    @widget-move=${this.onWidgetMove}
+                    @widget-edit-raw=${this.onEditRaw}
+                    @canvas-cursor=${(e: CustomEvent) => (this.cursor = e.detail)}
+                  ></ohb-canvas>
+                `
+              : nothing}
+          </div>
+          ${this.drawer
+            ? html`<aside class="drawer" aria-label=${this.drawer === 'history' ? 'Version history' : 'Theme'}>
+                <header>
+                  <span>${this.drawer === 'history' ? 'Version history' : 'Theme'}</span>
+                  <button class="btn icon ghost" aria-label="Close panel" @click=${() => (this.drawer = null)}>
+                    ${icon('close')}
+                  </button>
+                </header>
+                <div class="drawer-body">
+                  ${this.drawer === 'history'
+                    ? html`<ohb-version-history
+                        .versions=${this.versions}
+                        @version-restore=${this.onRestoreVersion}
+                      ></ohb-version-history>`
+                    : html`<ohb-theme-editor
+                        .themes=${this.themes}
+                        .activeThemeId=${this.plate.theme_id}
+                        @theme-select=${this.onThemeSelect}
+                        @theme-save=${this.onThemeSave}
+                      ></ohb-theme-editor>`}
+                </div>
+              </aside>`
+            : nothing}
+        </main>
+
+        <aside class="right" aria-label="Inspector">
           <ohb-property-panel
-            .widget=${this.selectedWidget}
+            .widget=${selected}
             .widgetDef=${widgetDef}
+            .evaluated=${selected ? this.evaluatedValues[selected.obj_id_start] : undefined}
+            .selectionCount=${this.selectedObjIds.size}
             @geometry-change=${this.onGeometryChange}
             @param-change=${this.onParamChange}
+            @nudge=${(e: CustomEvent) => this.nudgeSelected(e.detail.dx, e.detail.dy)}
+            @widget-edit-raw=${this.onEditRaw}
           ></ohb-property-panel>
-        </div>
-        ${this.showVersions
-          ? html`<ohb-version-history
-              .versions=${this.versions}
-              @version-restore=${this.onRestoreVersion}
-            ></ohb-version-history>`
-          : html``}
-        ${this.showThemeEditor
-          ? html`<ohb-theme-editor
-              .themes=${this.themes}
-              .activeThemeId=${this.plate.theme_id}
-              @theme-select=${this.onThemeSelect}
-              @theme-save=${this.onThemeSave}
-            ></ohb-theme-editor>`
-          : html``}
+        </aside>
       </div>
+
+      <footer class="statusbar">
+        <span class="mono">${this.cursor ? `x ${this.cursor.x}  y ${this.cursor.y}` : 'x —  y —'}</span>
+        <span>${this.selectedObjIds.size > 0 ? `${this.selectedObjIds.size} selected` : 'No selection'}</span>
+        <span role="status">${this.statusMessage}</span>
+        <span class="mono">bundle ${this.bundleVersion}</span>
+      </footer>
+
+      <dialog id="publish-dialog">
+        <div class="dlg">
+          <h2>Publish “${this.plate.display_name}” to the device?</h2>
+          <p>
+            This saves the plate, writes its jsonl and yaml files and reloads it. The version is saved to history, so
+            you can restore it.
+          </p>
+          <div class="changes">
+            ${dirty ? 'Your unsaved edits will be included.' : 'No unsaved edits: this re-publishes the stored draft.'}
+          </div>
+          <div class="actions">
+            <button class="btn" @click=${this.closePublishDialog}>Cancel</button>
+            <button class="btn primary" @click=${this.confirmPublish}>Publish</button>
+          </div>
+        </div>
+      </dialog>
+
       ${this.rawEditorWidget
         ? html`<ohb-raw-editor
             .widget=${this.rawEditorWidget}
             @raw-editor-close=${this.onRawEditorClose}
             @raw-editor-save=${this.onRawEditorSave}
           ></ohb-raw-editor>`
-        : html``}
+        : nothing}
       ${this.showConfigEditor
         ? html`<ohb-config-editor
             .jsonlText=${this.configJsonl}
@@ -927,7 +1461,7 @@ export class OpenhaspBuilderPanel extends LitElement {
             @config-editor-close=${this.onConfigEditorClose}
             @config-editor-preview=${this.onConfigEditorPreview}
           ></ohb-config-editor>`
-        : html``}
+        : nothing}
     `;
   }
 }
