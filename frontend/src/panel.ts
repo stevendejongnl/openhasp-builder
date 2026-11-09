@@ -622,10 +622,16 @@ export class OpenhaspBuilderPanel extends LitElement {
         }
       }
     }
-    if (jobs.length === 0) return;
+    // Object ids repeat across pages (id 1 exists on page 1 and on page 2), so
+    // values evaluated for another page must never be kept: start from empty.
+    if (jobs.length === 0) {
+      this.evaluatedValues = {};
+      return;
+    }
     try {
       const results = await api.evaluateTemplates(jobs.map((j) => j.template));
-      const next: Record<number, Record<string, string>> = { ...this.evaluatedValues };
+      if (page !== this.activePage) return; // the user switched pages while this was in flight
+      const next: Record<number, Record<string, string>> = {};
       jobs.forEach((job, i) => {
         next[job.objId] = { ...next[job.objId], [job.prop]: results[i] };
       });
@@ -1295,6 +1301,7 @@ export class OpenhaspBuilderPanel extends LitElement {
                   @click=${() => {
                     this.activePageId = p.id;
                     this.selectedObjIds = new Set();
+                    this.evaluatedValues = {};
                     void this.refreshTemplates();
                   }}
                 >
