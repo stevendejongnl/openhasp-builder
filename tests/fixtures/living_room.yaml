@@ -1,0 +1,416 @@
+# =============================================================================
+# OpenHASP — Living Room Plate
+#
+# NOTE: Page 2 (radio — active), Page 3 (cameras — inactive) objects
+# are commented out and currently inactive. They are kept for reference in case
+# these features are re-enabled on the touch panel in the future.
+# =============================================================================
+
+living_room:
+  objects:
+    # =========================================================================
+    # Page 1 — Home / Temperature & Lights
+    # =========================================================================
+
+    # Average house temperature
+    - obj: "p1b5"
+      properties:
+        "text": "{{ states('sensor.example_1') }}°C"
+
+    # Average downstairs temperature
+    - obj: "p1b12"
+      properties:
+        "text": "{{ states('sensor.example_2') }}°C"
+
+    # Average upstairs temperature + play SLAM! on press
+    - obj: "p1b17"
+      properties:
+        "text": "{{ states('sensor.example_3') }}°C"
+
+      # Change house heating target (inactive)
+      # - obj: "p1b55"
+      #   properties:
+      #     "val": "{{ states('input_number.example_1') }}"
+      #   event:
+      #     "changed":
+      #       - service: input_number.set_value
+      #         data:
+      #           entity_id: input_number.example_1
+      #           value: "{{ val }}"
+      #     "up":
+      #       - service: input_number.set_value
+      #         data:
+      #           entity_id: input_number.example_1
+      #           value: "{{ val }}"
+
+      event:
+        "down":
+          - service: script.example_1
+            data:
+              station: slam
+              target_players: [media_player.example_1]
+
+    # Heating target buttons (18 / 20 / 22 °C)
+    - obj: "p1b68"
+      event:
+        "down":
+          - service: script.example_2
+            data:
+              target_temp: 18
+    - obj: "p1b55"
+      properties:
+        "border_side": "{{ 15 if states('input_number.example_1') == '18' else 0 }}"
+        "border_color": "{{ '#00C853' if states('input_number.example_1') == '18' else '#2C2C2C' }}"
+        "bg_color": "{{ '#1B3D1C' if states('input_number.example_1') == '18' else '#2C2C2C' }}"
+
+    - obj: "p1b69"
+      event:
+        "down":
+          - service: script.example_2
+            data:
+              target_temp: 20
+    - obj: "p1b56"
+      properties:
+        "border_side": "{{ 15 if states('input_number.example_1') == '20' else 0 }}"
+        "border_color": "{{ '#FF9100' if states('input_number.example_1') == '20' else '#2C2C2C' }}"
+        "bg_color": "{{ '#3D2D1C' if states('input_number.example_1') == '20' else '#2C2C2C' }}"
+
+    - obj: "p1b78"
+      event:
+        "down":
+          - service: script.example_2
+            data:
+              target_temp: 22
+    - obj: "p1b57"
+      properties:
+        "border_side": "{{ 15 if states('input_number.example_1') == '22' else 0 }}"
+        "border_color": "{{ '#FF3D00' if states('input_number.example_1') == '22' else '#2C2C2C' }}"
+        "bg_color": "{{ '#3D1C1C' if states('input_number.example_1') == '22' else '#2C2C2C' }}"
+
+    # Current heating target display
+    - obj: "p1b22"
+      properties:
+        "text": "{{ states('input_number.example_1') }}"
+
+    # Auto TV Off toggle
+    - obj: "p1b85"
+      event:
+        "down":
+          - service: input_boolean.toggle
+            entity_id: input_boolean.example_1
+    - obj: "p1b81"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("input_boolean.example_1", "on") else "#2C2C2C" }}'
+    - obj: "p1b82"
+      properties:
+        "text_color": '{{ "#4caf50" if is_state("input_boolean.example_1", "on") else "#6F6F6F" }}'
+    - obj: "p1b84"
+      properties:
+        "text": '{{ "Aan" if is_state("input_boolean.example_1", "on") else "Uit" }}'
+
+    # Weather display
+    - obj: "p1b87"
+      properties:
+        "text": >-
+          {% set condition = states('weather.example_1') %}
+          {% if condition == 'sunny' %}{{ "\uE599" }}
+          {% elif condition == 'clear-night' %}{{ "\uE594" }}
+          {% elif condition == 'cloudy' %}{{ "\uE590" }}
+          {% elif condition == 'partlycloudy' %}{{ "\uE595" }}
+          {% elif condition == 'rainy' %}{{ "\uE596" }}
+          {% elif condition == 'snowy' %}{{ "\uE598" }}
+          {% elif condition == 'lightning' %}{{ "\uE593" }}
+          {% elif condition == 'fog' %}{{ "\uE591" }}
+          {% elif condition == 'windy' %}{{ "\uE59D" }}
+          {% else %}{{ "\uE590" }}{% endif %}
+    - obj: "p1b88"
+      properties:
+        "text": "{{ state_attr('weather.example_1', 'temperature') | round(0) }}°C"
+    - obj: "p1b89"
+      properties:
+        "text": >-
+          {% set condition = states('weather.example_1') %}
+          {% if condition == 'sunny' %}Zonnig
+          {% elif condition == 'clear-night' %}Helder
+          {% elif condition == 'cloudy' %}Bewolkt
+          {% elif condition == 'partlycloudy' %}Half bew.
+          {% elif condition == 'rainy' %}Regen
+          {% elif condition == 'snowy' %}Sneeuw
+          {% elif condition == 'lightning' %}Onweer
+          {% elif condition == 'fog' %}Mist
+          {% elif condition == 'windy' %}Wind
+          {% else %}{{ condition }}{% endif %}
+
+    # Television — Living room
+    - obj: "p1b75"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: switch.example_1
+    - obj: "p1b71"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("switch.example_1", "on") else "#2C2C2C" }}'
+    - obj: "p1b72"
+      properties:
+        "text": '{{ "\uE502" }}'
+        "text_color": '{{ "#4caf50" if is_state("switch.example_1", "on") else "#6F6F6F" }}'
+    - obj: "p1b74"
+      properties:
+        "text": '{{ "Aan" if is_state("switch.example_1", "on") else "Uit" }}'
+
+    # Lights — Living room front
+    - obj: "p1b58"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: light.example_1
+    - obj: "p1b36"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("light.example_1", "on") else "#2C2C2C" }}'
+    - obj: "p1b37"
+      properties:
+        "text": '{{ "\uE6E8" if is_state("light.example_1", "on") else "\uE335" }}'
+        "text_color": '{{ "#4caf50" if is_state("light.example_1", "on") else "#6F6F6F" }}'
+    - obj: "p1b39"
+      properties:
+        "text": '{{ "Aan" if is_state("light.example_1", "on") else "Uit" }}'
+
+    # Lights — Living room back
+    - obj: "p1b59"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: light.example_2
+    - obj: "p1b41"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("light.example_2", "on") else "#2C2C2C" }}'
+    - obj: "p1b42"
+      properties:
+        "text": '{{ "\uE6E8" if is_state("light.example_2", "on") else "\uE335" }}'
+        "text_color": '{{ "#4caf50" if is_state("light.example_2", "on") else "#6F6F6F" }}'
+    - obj: "p1b44"
+      properties:
+        "text": '{{ "Aan" if is_state("light.example_2", "on") else "Uit" }}'
+
+    # Lights — Ambient lights
+    - obj: "p1b60"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: light.example_3
+    - obj: "p1b46"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("light.example_3", "on") else "#2C2C2C" }}'
+    - obj: "p1b47"
+      properties:
+        "text": '{{ "\uE6E8" if is_state("light.example_3", "on") else "\uE335" }}'
+        "text_color": '{{ "#4caf50" if is_state("light.example_3", "on") else "#6F6F6F" }}'
+    - obj: "p1b49"
+      properties:
+        "text": '{{ "Aan" if is_state("light.example_3", "on") else "Uit" }}'
+
+    # Lights — Garden
+    - obj: "p1b105"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: light.example_4
+    - obj: "p1b101"
+      properties:
+        "text": '\uE70D'
+        "bg_color": '{{ "#253926" if is_state("light.example_4", "on") else "#2C2C2C" }}'
+    - obj: "p1b102"
+      properties:
+        "text": '{{ "\uE6E8" if is_state("light.example_4", "on") else "\uE335" }}'
+        "text_color": '{{ "#4caf50" if is_state("light.example_4", "on") else "#6F6F6F" }}'
+    - obj: "p1b104"
+      properties:
+        "text": '{{ "Aan" if is_state("light.example_4", "on") else "Uit" }}'
+
+    # =========================================================================
+    # Page 2 — Extra Lights (inactive)
+    # =========================================================================
+
+    # Kitchen
+    # - obj: "p2b58"
+    #   event:
+    #     "down":
+    #       - service: homeassistant.toggle
+    #         entity_id: light.example_5
+    # - obj: "p2b36"
+    #   properties:
+    #     "bg_color": '{{ "#253926" if is_state("light.example_5", "on") else "#2C2C2C" }}'
+    # - obj: "p2b37"
+    #   properties:
+    #     "text": '{{ "\uE6E8" if is_state("light.example_5", "on") else "\uE335" }}'
+    #     "text_color": '{{ "#4caf50" if is_state("light.example_5", "on") else "#6F6F6F" }}'
+    # - obj: "p2b39"
+    #   properties:
+    #     "text": '{{ "Aan" if is_state("light.example_5", "on") else "Uit" }}'
+
+    # Dining Room
+    # - obj: "p2b59"
+    #   event:
+    #     "down":
+    #       - service: homeassistant.toggle
+    #         entity_id: light.example_6
+    # - obj: "p2b41"
+    #   properties:
+    #     "bg_color": '{{ "#253926" if is_state("light.example_6", "on") else "#2C2C2C" }}'
+    # - obj: "p2b42"
+    #   properties:
+    #     "text": '{{ "\uE6E8" if is_state("light.example_6", "on") else "\uE335" }}'
+    #     "text_color": '{{ "#4caf50" if is_state("light.example_6", "on") else "#6F6F6F" }}'
+    # - obj: "p2b44"
+    #   properties:
+    #     "text": '{{ "Aan" if is_state("light.example_6", "on") else "Uit" }}'
+
+    # Shed
+    # - obj: "p2b60"
+    #   event:
+    #     "down":
+    #       - service: homeassistant.toggle
+    #         entity_id: light.example_7
+    # - obj: "p2b46"
+    #   properties:
+    #     "bg_color": '{{ "#253926" if is_state("light.example_7", "on") else "#2C2C2C" }}'
+    # - obj: "p2b47"
+    #   properties:
+    #     "text": '{{ "\uE6E8" if is_state("light.example_7", "on") else "\uE335" }}'
+    #     "text_color": '{{ "#4caf50" if is_state("light.example_7", "on") else "#6F6F6F" }}'
+    # - obj: "p2b49"
+    #   properties:
+    #     "text": '{{ "Aan" if is_state("light.example_7", "on") else "Uit" }}'
+
+    # Bedroom
+    # - obj: "p2b105"
+    #   event:
+    #     "down":
+    #       - service: homeassistant.toggle
+    #         entity_id: light.example_8
+    # - obj: "p2b101"
+    #   properties:
+    #     "bg_color": '{{ "#253926" if is_state("light.example_8", "on") else "#2C2C2C" }}'
+    # - obj: "p2b102"
+    #   properties:
+    #     "text": '{{ "\uE6E8" if is_state("light.example_8", "on") else "\uE335" }}'
+    #     "text_color": '{{ "#4caf50" if is_state("light.example_8", "on") else "#6F6F6F" }}'
+    # - obj: "p2b104"
+    #   properties:
+    #     "text": '{{ "Aan" if is_state("light.example_8", "on") else "Uit" }}'
+
+    # Downstairs (all)
+    # - obj: "p2b115"
+    #   event:
+    #     "down":
+    #       - service: homeassistant.toggle
+    #         entity_id: light.example_9
+    # - obj: "p2b111"
+    #   properties:
+    #     "bg_color": '{{ "#253926" if is_state("light.example_9", "on") else "#2C2C2C" }}'
+    # - obj: "p2b112"
+    #   properties:
+    #     "text": '{{ "\uE6E8" if is_state("light.example_9", "on") else "\uE335" }}'
+    #     "text_color": '{{ "#4caf50" if is_state("light.example_9", "on") else "#6F6F6F" }}'
+    # - obj: "p2b114"
+    #   properties:
+    #     "text": '{{ "Aan" if is_state("light.example_9", "on") else "Uit" }}'
+
+    # Upstairs (all)
+    # - obj: "p2b125"
+    #   event:
+    #     "down":
+    #       - service: homeassistant.toggle
+    #         entity_id: light.example_10
+    # - obj: "p2b121"
+    #   properties:
+    #     "bg_color": '{{ "#253926" if is_state("light.example_10", "on") else "#2C2C2C" }}'
+    # - obj: "p2b122"
+    #   properties:
+    #     "text": '{{ "\uE6E8" if is_state("light.example_10", "on") else "\uE335" }}'
+    #     "text_color": '{{ "#4caf50" if is_state("light.example_10", "on") else "#6F6F6F" }}'
+    # - obj: "p2b124"
+    #   properties:
+    #     "text": '{{ "Aan" if is_state("light.example_10", "on") else "Uit" }}'
+
+    # =========================================================================
+    # Page 4 — Cameras (inactive)
+    # =========================================================================
+
+    # - obj: "p4b5"
+    #   properties:
+    #     "src": "http://homeassistant.example.invalid:8123/local/snapshots/doorbell_snapshot1.png"
+    #   event:
+    #     "trigger":
+    #       - service: mqtt.subscribe
+    #         data:
+    #           topic: frigate/events
+    #           id: frigate-event
+    #           payload: doorbell
+
+    # =========================================================================
+    # Page 2 — Radio
+    # Station buttons (p2b7–p2b12) trigger play_radio for both Volumio rooms.
+    # Volume slider (p2b6) controls both rooms simultaneously.
+    # Stop button (p2b25) stops both rooms.
+    # Now-playing label (p2b30) shows current track from living room.
+    # =========================================================================
+
+    # Station buttons
+    - obj: "p2b7"
+      event:
+        "down":
+          - service: script.example_3
+
+    - obj: "p2b8"
+      event:
+        "down":
+          - service: script.example_4
+
+    - obj: "p2b9"
+      event:
+        "down":
+          - service: script.example_5
+
+    - obj: "p2b10"
+      event:
+        "down":
+          - service: script.example_6
+
+    - obj: "p2b11"
+      event:
+        "down":
+          - service: script.example_7
+
+    - obj: "p2b12"
+      event:
+        "down":
+          - service: script.example_8
+
+    # Volume slider — sets volume on both rooms simultaneously
+    - obj: "p2b6"
+      properties:
+        "val": '{{ (state_attr("media_player.example_1", "volume_level") | float(0) * 100) | int }}'
+      event:
+        "up":
+          - service: media_player.volume_set
+            data:
+              entity_id:
+                - media_player.example_1
+                - media_player.example_2
+              volume_level: "{{ val / 100 }}"
+
+    # Stop button — stops both rooms
+    - obj: "p2b25"
+      event:
+        "down":
+          - service: media_player.media_stop
+            data:
+              entity_id:
+                - media_player.example_1
+                - media_player.example_2
+
+    # Now-playing label — shows current track title from living room
+    - obj: "p2b30"
+      properties:
+        "text": '{{ state_attr("media_player.example_1", "media_title") or "" }}'

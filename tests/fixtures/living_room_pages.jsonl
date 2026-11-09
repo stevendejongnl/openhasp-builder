@@ -1,0 +1,195 @@
+{"plate_name":"Living Room"}
+
+{"comment":"Overlay"}
+{"page":0,"id":0}
+
+{"comment":"Start page"}
+{"page":1,"id":0,"prev":3,"next":2,"bg_color":"#111111"}
+
+{"comment":"Temperatures"}
+{"page":1,"id":3,"obj":"obj","x":322,"y":5,"w":152,"h":75,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":4,"obj":"label","x":339,"y":17,"w":200,"h":40,"text":"Hele huis","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":5,"obj":"label","x":339,"y":40,"w":200,"h":40,"text":"-°C","text_font":24}
+
+{"page":1,"id":10,"obj":"obj","x":322,"y":85,"w":152,"h":75,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":11,"obj":"label","x":339,"y":102,"w":200,"h":40,"text":"Beneden","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":12,"obj":"label","x":339,"y":120,"w":200,"h":40,"text":"-°C","text_font":24}
+
+{"page":1,"id":15,"obj":"obj","x":322,"y":165,"w":152,"h":75,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":16,"obj":"label","x":339,"y":182,"w":200,"h":40,"text":"Boven","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":17,"obj":"label","x":339,"y":200,"w":200,"h":40,"text":"-°C","text_font":24}
+
+{"comment":"Heating"}
+{"page":1,"id":20,"obj":"obj","x":5,"y":5,"w":310,"h":75,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":21,"obj":"obj","x":15,"y":10,"w":65,"h":65,"radius":35,"border_side":0,"bg_color":"#2C2C2C","click":false}
+{"page":1,"id":22,"obj":"label","x":15,"y":10,"w":65,"h":65,"text":"-°C","text_font":24,"text_color":"#6F6F6F","align":"center"}
+
+{"page":1,"id":55,"obj":"obj","x":85,"y":10,"w":65,"h":65,"radius":35,"border_side":0,"border_color":"#2C2C2C","bg_color":"#2C2C2C","click":false}
+{"page":1,"id":65,"obj":"label","x":85,"y":10,"w":65,"h":65,"text":"18°C","text_font":16,"text_color":"#00C853","align":"center"}
+{"page":1,"id":68,"obj":"obj","x":85,"y":10,"w":65,"h":65,"radius":35,"click":true,"border_side":0,"bg_opa":0}
+
+{"page":1,"id":56,"obj":"obj","x":155,"y":10,"w":65,"h":65,"radius":35,"border_side":0,"border_color":"#2C2C2C","bg_color":"#2C2C2C","click":false}
+{"page":1,"id":66,"obj":"label","x":155,"y":10,"w":65,"h":65,"text":"20°C","text_font":16,"text_color":"#FF9100","align":"center"}
+{"page":1,"id":69,"obj":"obj","x":155,"y":10,"w":65,"h":65,"radius":35,"click":true,"border_side":0,"bg_opa":0}
+
+{"page":1,"id":57,"obj":"obj","x":225,"y":10,"w":65,"h":65,"radius":35,"border_side":0,"border_color":"#2C2C2C","bg_color":"#2C2C2C","click":false}
+{"page":1,"id":67,"obj":"label","x":225,"y":10,"w":65,"h":65,"text":"22°C","text_font":16,"text_color":"#FF3D00","align":"center"}
+{"page":1,"id":78,"obj":"obj","x":225,"y":10,"w":65,"h":65,"radius":35,"click":true,"border_side":0,"bg_opa":0}
+
+
+{"comment":"Auto TV Off"}
+{"page":1,"id":80,"obj":"obj","x":5,"y":85,"w":235,"h":75,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":81,"obj":"obj","x":15,"y":90,"w":65,"h":65,"radius":35,"border_side":0,"bg_color":"#2C2C2C","click":false}
+{"page":1,"id":82,"obj":"label","x":23,"y":95,"w":65,"h":65,"text":"\uE425","text_font":48,"text_color":"#6F6F6F"}
+{"page":1,"id":83,"obj":"label","x":100,"y":95,"w":150,"h":40,"text":"Auto TV uit","text_font":24}
+{"page":1,"id":84,"obj":"label","x":100,"y":125,"w":150,"h":40,"text":"Uit","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":85,"obj":"obj","x":5,"y":85,"w":235,"h":75,"click":true,"border_side":0,"bg_opa":0}
+
+{"comment":"Weather"}
+{"page":1,"id":86,"obj":"obj","x":248,"y":85,"w":70,"h":155,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":87,"obj":"label","x":248,"y":100,"w":70,"h":50,"text":"\uE599","text_font":48,"align":"center","text_color":"#6F6F6F"}
+{"page":1,"id":88,"obj":"label","x":248,"y":155,"w":70,"h":40,"text":"-°C","text_font":24,"align":"center"}
+{"page":1,"id":89,"obj":"label","x":248,"y":190,"w":70,"h":40,"text":"--","text_font":16,"align":"center","text_color":"#9b9b9b"}
+
+{"comment":"Television"}
+{"page":1,"id":70,"obj":"obj","x":5,"y":165,"w":235,"h":75,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":71,"obj":"obj","x":15,"y":170,"w":65,"h":65,"radius":35,"border_side":0,"bg_color":"#2C2C2C","click":false}
+{"page":1,"id":72,"obj":"label","x":23,"y":175,"w":65,"h":65,"text":"\uE502","text_font":48,"text_color":"#6F6F6F"}
+{"page":1,"id":73,"obj":"label","x":100,"y":175,"w":150,"h":40,"text":"Televisie","text_font":24}
+{"page":1,"id":74,"obj":"label","x":100,"y":205,"w":150,"h":40,"text":"Uit","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":75,"obj":"obj","x":5,"y":165,"w":235,"h":75,"click":true,"border_side":0,"bg_opa":0}
+
+{"comment":"Lights"}
+{"page":1,"id":35,"obj":"obj","x":5,"y":245,"w":235,"h":75,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":36,"obj":"obj","x":15,"y":250,"w":65,"h":65,"radius":35,"border_side":0,"bg_color":"#2C2C2C","click":false}
+{"page":1,"id":37,"obj":"label","x":23,"y":255,"w":65,"h":65,"text":"\uE335","text_font":48,"text_color":"#6F6F6F"}
+{"page":1,"id":38,"obj":"label","x":100,"y":255,"w":150,"h":40,"text":"Voorkamer","text_font":24}
+{"page":1,"id":39,"obj":"label","x":100,"y":285,"w":150,"h":40,"text":"Uit","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":58,"obj":"obj","x":5,"y":245,"w":235,"h":75,"click":true,"border_side":0,"bg_opa":0,"group":3}
+
+{"page":1,"id":40,"obj":"obj","x":248,"y":245,"w":225,"h":75,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":41,"obj":"obj","x":258,"y":250,"w":65,"h":65,"radius":35,"border_side":0,"bg_color":"#2C2C2C","click":false}
+{"page":1,"id":42,"obj":"label","x":266,"y":255,"w":65,"h":65,"text":"\uE335","text_font":48,"text_color":"#6F6F6F"}
+{"page":1,"id":43,"obj":"label","x":339,"y":255,"w":140,"h":40,"text":"Achterkamer","text_font":24}
+{"page":1,"id":44,"obj":"label","x":339,"y":285,"w":140,"h":40,"text":"Uit","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":59,"obj":"obj","x":248,"y":245,"w":225,"h":75,"click":true,"border_side":0,"bg_opa":0,"group":2}
+
+{"page":1,"id":45,"obj":"obj","x":5,"y":325,"w":235,"h":75,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":46,"obj":"obj","x":15,"y":330,"w":65,"h":65,"radius":35,"border_side":0,"bg_color":"#2C2C2C","click":false}
+{"page":1,"id":47,"obj":"label","x":23,"y":335,"w":65,"h":65,"text":"\uE335","text_font":48,"text_color":"#6F6F6F"}
+{"page":1,"id":48,"obj":"label","x":100,"y":335,"w":150,"h":40,"text":"Ambient","text_font":24}
+{"page":1,"id":49,"obj":"label","x":100,"y":370,"w":150,"h":40,"text":"Uit","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":60,"obj":"obj","x":5,"y":325,"w":235,"h":75,"click":true,"border_side":0,"bg_opa":0}
+
+{"page":1,"id":100,"obj":"obj","x":248,"y":325,"w":225,"h":75,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":101,"obj":"obj","x":258,"y":330,"w":65,"h":65,"radius":35,"border_side":0,"bg_color":"#2C2C2C","click":false}
+{"page":1,"id":102,"obj":"label","x":266,"y":335,"w":65,"h":65,"text":"\uE335","text_font":48,"text_color":"#6F6F6F"}
+{"page":1,"id":103,"obj":"label","x":339,"y":335,"w":140,"h":40,"text":"Tuin","text_font":24}
+{"page":1,"id":104,"obj":"label","x":339,"y":370,"w":140,"h":40,"text":"Uit","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":105,"obj":"obj","x":248,"y":325,"w":225,"h":75,"click":true,"border_side":0,"bg_opa":0}
+
+
+{"comment":"Navigation"}
+{"page":1,"id":200,"obj":"obj","x":5,"y":425,"w":60,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#253926"}
+{"page":1,"id":201,"obj":"label","x":20,"y":435,"w":60,"h":40,"text":"Start","text_font":16,"text_color":"#4caf50"}
+{"page":1,"id":202,"obj":"obj","x":5,"y":425,"w":60,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 1"}}
+{"page":1,"id":203,"obj":"obj","x":70,"y":425,"w":105,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":204,"obj":"label","x":85,"y":435,"w":105,"h":40,"text":"Radio","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":205,"obj":"obj","x":70,"y":425,"w":105,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 2"}}
+{"page":1,"id":206,"obj":"obj","x":180,"y":425,"w":110,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":1,"id":207,"obj":"label","x":195,"y":435,"w":110,"h":40,"text":"Cameras","text_font":16,"text_color":"#9b9b9b"}
+{"page":1,"id":208,"obj":"obj","x":180,"y":425,"w":110,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 3"}}
+
+
+// {"page":1,"id":203,"obj":"obj","x":70,"y":425,"w":80,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+// {"page":1,"id":204,"obj":"label","x":85,"y":435,"w":80,"h":40,"text":"Lichten","text_font":16,"text_color":"#9b9b9b"}
+// {"page":1,"id":205,"obj":"obj","x":70,"y":425,"w":80,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 2"}}
+
+// {"page":1,"id":206,"obj":"obj","x":155,"y":425,"w":105,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+// {"page":1,"id":207,"obj":"label","x":170,"y":435,"w":105,"h":40,"text":"Radio","text_font":16,"text_color":"#9b9b9b"}
+// {"page":1,"id":208,"obj":"obj","x":155,"y":425,"w":105,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 3"}}
+
+// {"page":1,"id":209,"obj":"obj","x":265,"y":425,"w":105,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+// {"page":1,"id":210,"obj":"label","x":280,"y":435,"w":105,"h":40,"text":"Cameras","text_font":16,"text_color":"#9b9b9b"}
+// {"page":1,"id":211,"obj":"obj","x":265,"y":425,"w":105,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 4"}}
+
+
+
+// {"comment":"Light page"}
+
+
+
+
+
+
+
+
+// {"comment":"Navigation"}
+
+
+
+
+
+
+// {"comment":"Radio page"}
+
+
+
+
+
+
+
+
+// {"comment":"Navigation"}
+
+
+
+
+
+
+// {"comment":"Camera's page"}
+
+// {"comment":"Navigation"}
+
+
+{"comment":"Page 2 — Radio"}
+{"page":2,"id":0,"prev":1,"next":3,"bg_color":"#111111"}
+{"page":2,"id":5,"obj":"label","x":5,"y":10,"w":420,"h":35,"text":"Radio","text_font":24,"text_color":"#ffffff"}
+{"page":2,"id":30,"obj":"label","x":5,"y":50,"w":465,"h":30,"text":"","text_font":16,"text_color":"#9b9b9b"}
+{"page":2,"id":7,"obj":"img","x":0,"y":95,"w":78,"h":50,"src":"http://homeassistant.example.invalid:8123/local/radio/qmusic.png","auto_size":1,"zoom":208}
+{"page":2,"id":8,"obj":"img","x":80,"y":95,"w":78,"h":50,"src":"http://homeassistant.example.invalid:8123/local/radio/qmusic-nonstop.png","auto_size":1,"zoom":208}
+{"page":2,"id":9,"obj":"img","x":160,"y":95,"w":78,"h":50,"src":"http://homeassistant.example.invalid:8123/local/radio/slam.png","auto_size":1,"zoom":208}
+{"page":2,"id":10,"obj":"img","x":240,"y":95,"w":78,"h":50,"src":"http://homeassistant.example.invalid:8123/local/radio/slam-nonstop.png","auto_size":1,"zoom":208}
+{"page":2,"id":11,"obj":"img","x":320,"y":95,"w":78,"h":50,"src":"http://homeassistant.example.invalid:8123/local/radio/538.png","auto_size":1,"zoom":208}
+{"page":2,"id":12,"obj":"img","x":400,"y":95,"w":78,"h":50,"src":"http://homeassistant.example.invalid:8123/local/radio/538-nonstop.png","auto_size":1,"zoom":208}
+{"page":2,"id":6,"obj":"slider","x":5,"y":185,"w":420,"h":20,"min":0,"max":100,"val":25,"border_side":0,"bg_color":"#2C2C2C"}
+{"page":2,"id":23,"obj":"obj","x":432,"y":178,"w":43,"h":34,"radius":10,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":2,"id":24,"obj":"label","x":432,"y":183,"w":43,"h":30,"text":"Stop","text_font":16,"text_color":"#9b9b9b","align":"center"}
+{"page":2,"id":25,"obj":"obj","x":432,"y":178,"w":43,"h":34,"click":true,"border_side":0,"bg_opa":0}
+{"page":2,"id":200,"obj":"obj","x":5,"y":425,"w":60,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":2,"id":201,"obj":"label","x":20,"y":435,"w":60,"h":40,"text":"Start","text_font":16,"text_color":"#9b9b9b"}
+{"page":2,"id":202,"obj":"obj","x":5,"y":425,"w":60,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 1"}}
+{"page":2,"id":203,"obj":"obj","x":70,"y":425,"w":105,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#253926"}
+{"page":2,"id":204,"obj":"label","x":85,"y":435,"w":105,"h":40,"text":"Radio","text_font":16,"text_color":"#4caf50"}
+{"page":2,"id":205,"obj":"obj","x":70,"y":425,"w":105,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 2"}}
+{"page":2,"id":206,"obj":"obj","x":180,"y":425,"w":110,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+{"page":2,"id":207,"obj":"label","x":195,"y":435,"w":110,"h":40,"text":"Cameras","text_font":16,"text_color":"#9b9b9b"}
+{"page":2,"id":208,"obj":"obj","x":180,"y":425,"w":110,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 3"}}
+// {"page":4,"id":5,"obj":"img","x":5,"y":5,"w":240,"h":135,"src":"http://homeassistant.example.invalid:8123/local/snapshots/doorbell_snapshot1.png","auto_size":1,"zoom":256,"event":{"trigger":{"type":"mqtt","topic":"frigate/events","payload":"doorbell"}}}
+
+
+// {"page":4,"id":200,"obj":"obj","x":5,"y":425,"w":60,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+// {"page":4,"id":201,"obj":"label","x":20,"y":435,"w":60,"h":40,"text":"Start","text_font":16,"text_color":"#9b9b9b"}
+// {"page":4,"id":202,"obj":"obj","x":5,"y":425,"w":60,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 1"}}
+
+// {"page":4,"id":203,"obj":"obj","x":70,"y":425,"w":80,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+// {"page":4,"id":204,"obj":"label","x":85,"y":435,"w":80,"h":40,"text":"Lights","text_font":16,"text_color":"#9b9b9b"}
+// {"page":4,"id":205,"obj":"obj","x":70,"y":425,"w":80,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 2"}}
+
+// {"page":4,"id":206,"obj":"obj","x":155,"y":425,"w":105,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#1c1c1c"}
+// {"page":4,"id":207,"obj":"label","x":170,"y":435,"w":105,"h":40,"text":"Radio","text_font":16,"text_color":"#9b9b9b"}
+// {"page":4,"id":208,"obj":"obj","x":155,"y":425,"w":105,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 3"}}
+
+// {"page":4,"id":209,"obj":"obj","x":265,"y":425,"w":105,"h":45,"radius":15,"click":false,"border_side":0,"bg_color":"#253926"}
+// {"page":4,"id":210,"obj":"label","x":280,"y":435,"w":105,"h":40,"text":"Cameras","text_font":16,"text_color":"#3caf50"}
+// {"page":4,"id":211,"obj":"obj","x":265,"y":425,"w":105,"h":45,"click":true,"border_side":0,"bg_opa":0,"action":{"down":"page 4"}}

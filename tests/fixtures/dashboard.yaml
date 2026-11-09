@@ -1,0 +1,155 @@
+# =============================================================================
+# OpenHASP — Dashboard (Attic) Plate
+#
+# NOTE: "Attic Something" (p1b57) is commented out and inactive.
+# =============================================================================
+
+dashboard:
+  objects:
+    # =========================================================================
+    # Page 1 — Environmental Sensors & Light Controls
+    # =========================================================================
+
+    # Clock
+    - obj: "p1b110"
+      properties:
+        "text": "{{ states('sensor.time') }}"
+
+    # Attic CO2 reading
+    - obj: "p1b5"
+      properties:
+        "text": "{{ '%.2f'|format(states('sensor.example_4') | float(default=0)) }} ppm"
+
+    # CO2 gauge
+    - obj: "p1b6"
+      properties:
+        "val": "{{ states('sensor.example_4') | float(default=0) | round(0) }}"
+        "line_color10": "{{ states('sensor.example_5') }}"
+
+    # Attic humidity
+    - obj: "p1b12"
+      properties:
+        "text": "{{ '%.2f'|format(states('sensor.example_6') | float(default=0)) }}%"
+
+    # Attic temperature
+    - obj: "p1b17"
+      properties:
+        "text": "{{ '%.2f'|format(states('sensor.example_7') | float(default=0)) }}°C"
+
+    # Attic Hue Light toggle
+    - obj: "p1b55"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: light.example_11
+    - obj: "p1b21"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("light.example_11", "on") else "#2C2C2C" }}'
+    - obj: "p1b22"
+      properties:
+        "text": '{{ "\uE6E8" if is_state("light.example_11", "on") else "\uE335" }}'
+        "text_color": '{{ "#4caf50" if is_state("light.example_11", "on") else "#6F6F6F" }}'
+    - obj: "p1b24"
+      properties:
+        "text": '{{ "On" if is_state("light.example_11", "on") else "Off" }}'
+
+    # Dashboard display keep-on toggle
+    - obj: "p1b56"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: input_boolean.example_2
+    - obj: "p1b26"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("input_boolean.example_2", "on") else "#2C2C2C" }}'
+    - obj: "p1b27"
+      properties:
+        "text_color": '{{ "#4caf50" if is_state("input_boolean.example_2", "on") else "#6F6F6F" }}'
+    - obj: "p1b29"
+      properties:
+        "text": '{{ "On" if is_state("input_boolean.example_2", "on") else "Off" }}'
+
+    # Attic Something (inactive)
+    # - obj: "p1b57"
+    #   event:
+    #     "down":
+    #       - service: homeassistant.toggle
+    #         entity_id: light.example_12
+    # - obj: "p1b31"
+    #   properties:
+    #     "bg_color": '{{ "#253926" if is_state("light.example_12", "on") else "#2C2C2C" }}'
+    # - obj: "p1b32"
+    #   properties:
+    #     "text": '{{ "\uE156" if is_state("light.example_12", "on") else "\uE156" }}'
+    #     "text_color": '{{ "#4caf50" if is_state("light.example_12", "on") else "#6F6F6F" }}'
+    # - obj: "p1b34"
+    #   properties:
+    #     "text": '{{ "On" if is_state("light.example_12", "on") else "Off" }}'
+
+    # Attic Far Left Light toggle
+    - obj: "p1b58"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: light.example_12
+    - obj: "p1b36"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("light.example_12", "on") else "#2C2C2C" }}'
+    - obj: "p1b37"
+      properties:
+        "text": '{{ "\uE6E8" if is_state("light.example_12", "on") else "\uE335" }}'
+        "text_color": '{{ "#4caf50" if is_state("light.example_12", "on") else "#6F6F6F" }}'
+    - obj: "p1b39"
+      properties:
+        "text": '{{ "On" if is_state("light.example_12", "on") else "Off" }}'
+
+    # Attic Far Right Light toggle
+    - obj: "p1b59"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: light.example_13
+    - obj: "p1b41"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("light.example_13", "on") else "#2C2C2C" }}'
+    - obj: "p1b42"
+      properties:
+        "text": '{{ "\uE6E8" if is_state("light.example_13", "on") else "\uE335" }}'
+        "text_color": '{{ "#4caf50" if is_state("light.example_13", "on") else "#6F6F6F" }}'
+    - obj: "p1b44"
+      properties:
+        "text": '{{ "On" if is_state("light.example_13", "on") else "Off" }}'
+
+    # Attic Near Left Light toggle
+    - obj: "p1b60"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: light.example_14
+    - obj: "p1b46"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("light.example_14", "on") else "#2C2C2C" }}'
+    - obj: "p1b47"
+      properties:
+        "text": '{{ "\uE6E8" if is_state("light.example_14", "on") else "\uE335" }}'
+        "text_color": '{{ "#4caf50" if is_state("light.example_14", "on") else "#6F6F6F" }}'
+    - obj: "p1b49"
+      properties:
+        "text": '{{ "On" if is_state("light.example_14", "on") else "Off" }}'
+
+    # Attic Near Right Light toggle
+    - obj: "p1b105"
+      event:
+        "down":
+          - service: homeassistant.toggle
+            entity_id: light.example_15
+    - obj: "p1b101"
+      properties:
+        "bg_color": '{{ "#253926" if is_state("light.example_15", "on") else "#2C2C2C" }}'
+    - obj: "p1b102"
+      properties:
+        "text": '{{ "\uE6E8" if is_state("light.example_15", "on") else "\uE335" }}'
+        "text_color": '{{ "#4caf50" if is_state("light.example_15", "on") else "#6F6F6F" }}'
+    - obj: "p1b104"
+      properties:
+        "text": '{{ "On" if is_state("light.example_15", "on") else "Off" }}'

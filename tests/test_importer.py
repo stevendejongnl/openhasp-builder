@@ -1,0 +1,93 @@
+import os
+from custom_components.openhasp_builder.importer import import_plate
+
+FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
+
+
+def test_import_dashboard_produces_plate_with_pages():
+    plate, warnings = import_plate(
+        plate_id="dashboard",
+        jsonl_path=os.path.join(FIXTURES, "dashboard_pages.jsonl"),
+        yaml_path=os.path.join(FIXTURES, "dashboard.yaml"),
+        device_profile_id="square_480",
+        theme_id="dark",
+    )
+    assert plate.id == "dashboard"
+    assert len(plate.pages) >= 1
+    # Page 0 (global overlay, e.g. msgbox popups) is now imported like any
+    # other page (C2), so it legitimately sorts first; page 1 is the first
+    # real user-facing page.
+    page_ids = [p.id for p in plate.pages]
+    assert 0 in page_ids
+    assert 1 in page_ids
+    assert page_ids[0] == 0
+
+
+def test_commented_jsonl_line_not_crashed(tmp_path):
+    jsonl = tmp_path / "test_pages.jsonl"
+    jsonl.write_text(
+        '{"plate_name":"Test"}\n'
+        '{"page":1,"id":0,"bg_color":"#111111"}\n'
+        '// human comment, not json\n'
+        '// {"page":1,"id":99,"obj":"label","x":0,"y":0,"w":10,"h":10}\n'
+        '{"page":1,"id":5,"obj":"label","x":10,"y":10,"w":50,"h":20}\n'
+    )
+    yaml_file = tmp_path / "test.yaml"
+    yaml_file.write_text("test_plate:\n  objects: []\n")
+
+    plate, warnings = import_plate("test_plate", str(jsonl), str(yaml_file), "square_480", "dark")
+    widgets_by_id = {w.obj_id_start: w for p in plate.pages for w in p.widgets}
+    # Commented-out JSON with page/id keys is imported as a disabled widget, not lost.
+    assert 99 in widgets_by_id
+    assert widgets_by_id[99].disabled is True
+    assert 5 in widgets_by_id
+    assert widgets_by_id[5].disabled is False
+
+
+def test_commented_json_line_becomes_disabled_widget(tmp_path):
+    jsonl = tmp_path / "test_pages.jsonl"
+    jsonl.write_text(
+        '{"plate_name":"Test"}\n'
+        '{"page":1,"id":0,"bg_color":"#111111"}\n'
+        '// {"page":1,"id":57,"obj":"label","x":0,"y":0,"w":10,"h":10,"text":"hidden"}\n'
+        '{"page":1,"id":5,"obj":"label","x":10,"y":10,"w":50,"h":20}\n'
+    )
+    yaml_file = tmp_path / "test.yaml"
+    yaml_file.write_text("test_plate:\n  objects: []\n")
+
+    plate, warnings = import_plate("test_plate", str(jsonl), str(yaml_file), "square_480", "dark")
+    widgets_by_id = {w.obj_id_start: w for p in plate.pages for w in p.widgets}
+    assert 57 in widgets_by_id
+    assert widgets_by_id[57].disabled is True
+    assert 5 in widgets_by_id
+    assert widgets_by_id[5].disabled is False
+
+
+def test_dashboard_fixture_commented_widget_57_imported_disabled():
+    plate, warnings = import_plate(
+        plate_id="dashboard",
+        jsonl_path=os.path.join(FIXTURES, "dashboard_pages.jsonl"),
+        yaml_path=os.path.join(FIXTURES, "dashboard.yaml"),
+        device_profile_id="square_480", theme_id="dark",
+    )
+    widgets_by_id = {w.obj_id_start: w for p in plate.pages for w in p.widgets}
+    assert 57 in widgets_by_id
+    assert widgets_by_id[57].disabled is True
+
+
+def test_malformed_json_line_produces_warning_not_crash(tmp_path):
+    jsonl = tmp_path / "bad_pages.jsonl"
+    jsonl.write_text(
+        '{"plate_name":"Test"}\n'
+        '{"page":1,"id":0,"bg_color":"#111111"}\n'
+        '{not valid json,,,}\n'
+        '{"page":1,"id":5,"obj":"label","x":10,"y":10,"w":50,"h":20}\n'
+    )
+    yaml_file = tmp_path / "bad.yaml"
+    yaml_file.write_text("bad_plate:\n  objects: []\n")
+
+    plate, warnings = import_plate("bad_plate", str(jsonl), str(yaml_file), "square_480", "dark")
+    assert len(warnings) == 1
+    assert "could not parse JSON" in warnings[0]
+    obj_ids = [w.obj_id_start for p in plate.pages for w in p.widgets]
+    assert 5 in obj_ids
