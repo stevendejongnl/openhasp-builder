@@ -11,7 +11,7 @@ import './canvas/ConfigEditor';
 import * as api from './api/client';
 import { tokens, controls } from './ui/styles';
 import { icon } from './ui/icons';
-import { fitZoom, nudgePosition } from './lib/geometry';
+import { fitZoom, nudgePosition, resizeBy } from './lib/geometry';
 import type {
   Plate,
   WidgetDef,
@@ -1170,8 +1170,9 @@ export class OpenhaspBuilderPanel extends LitElement {
     };
     const d = delta[e.key];
     if (d) {
-      e.preventDefault();
-      this.nudgeSelected(d[0], d[1]);
+      e.preventDefault(); // also stops Alt+Left/Right from navigating the browser back/forward
+      if (e.altKey) this.resizeSelected(d[0], d[1]);
+      else this.nudgeSelected(d[0], d[1]);
     }
   };
 
@@ -1191,6 +1192,29 @@ export class OpenhaspBuilderPanel extends LitElement {
         this.selectedObjIds.has(w.obj_id_start)
           ? { ...w, ...nudgePosition(w.x, w.y, dx, dy) }
           : w
+      );
+    });
+  }
+
+  private onWidgetResize(e: CustomEvent) {
+    const { objId, x, y, w, h } = e.detail as { objId: number; x: number; y: number; w: number; h: number };
+    this.mutatePlate((plate) => {
+      const widget = plate.pages.find((p) => p.id === this.activePageId)?.widgets.find((x2) => x2.obj_id_start === objId);
+      if (widget) Object.assign(widget, { x, y, w, h });
+    });
+  }
+
+  // Keyboard alternative to dragging a resize handle (WCAG 2.2 dragging movements).
+  private resizeSelected(dw: number, dh: number) {
+    if (this.selectedObjIds.size === 0 || !this.plate) return;
+    const profile = DEVICE_PROFILES[this.plate.device_profile_id];
+    if (!profile) return;
+    const bounds = { w: profile.width, h: profile.height };
+    this.mutatePlate((plate) => {
+      const page = plate.pages.find((p) => p.id === this.activePageId);
+      if (!page) return;
+      page.widgets = page.widgets.map((w) =>
+        this.selectedObjIds.has(w.obj_id_start) ? { ...w, ...resizeBy(w, dw, dh, bounds) } : w
       );
     });
   }
@@ -1459,7 +1483,7 @@ export class OpenhaspBuilderPanel extends LitElement {
                 ${icon('fit')}Fit
               </button>
             </div>
-            <div class="info">Click to select · Shift-click adds · arrow keys nudge 1 px (⇧ 5 px) · double-click opens the raw editor</div>
+            <div class="info">Click to select · arrows nudge · Alt+arrows resize (⇧ = 5 px) · drag a handle to resize · double-click: raw editor</div>
             <div class="compare">
               ${this.compareOn
                 ? html`
@@ -1523,6 +1547,7 @@ export class OpenhaspBuilderPanel extends LitElement {
                     @composite-place=${this.onCompositePlace}
                     @widget-select=${this.onWidgetSelect}
                     @widget-move=${this.onWidgetMove}
+                    @widget-resize=${this.onWidgetResize}
                     @widget-edit-raw=${this.onEditRaw}
                     @canvas-cursor=${(e: CustomEvent) => (this.cursor = e.detail)}
                   ></ohb-canvas>

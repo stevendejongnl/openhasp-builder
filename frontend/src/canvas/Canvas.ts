@@ -6,7 +6,7 @@ import {
   advanceUnits, advanceWidth, deviceColor, deviceText, DEFAULT_FONT_PX, DEVICE_FONT, isMdiGlyph,
   labelTopOffset, relativizeSrc, unshiftMdiCodepoint, withOpacity,
 } from '../lib/lvgl';
-import { clampPct, snap } from '../lib/geometry';
+import { clampPct, resizeRect, snap, type Handle } from '../lib/geometry';
 import { liveValue, rawProp, staticProps } from '../lib/props';
 
 function renderGridText(text: string, fontPx: number) {
@@ -336,6 +336,21 @@ export class Canvas extends LitElement {
       cursor: move;
       overflow: hidden;
     }
+    .resize-box {
+      position: absolute;
+      pointer-events: none;
+      box-sizing: border-box;
+      border: 1.5px solid var(--primary-color, #03a9f4);
+    }
+    .rh {
+      position: absolute;
+      pointer-events: auto;
+      box-sizing: border-box;
+      background: #fff;
+      border: 1.5px solid var(--primary-color, #03a9f4);
+      border-radius: 2px;
+      touch-action: none;
+    }
     .device-overlay {
       position: absolute;
       left: 0;
@@ -485,6 +500,65 @@ export class Canvas extends LitElement {
     );
   }
 
+  // Resize handles: only for a single layer whose geometry is not bound to a
+  // Home Assistant template (a drag could not change a bound value).
+  private resizable(): PlacedWidget | null {
+    if (!this.page || this.selectedIds.size !== 1) return null;
+    const [id] = [...this.selectedIds];
+    const w = this.page.widgets.find((x) => x.obj_id_start === id);
+    if (!w || w.disabled) return null;
+    const bound = (w.params?.properties as Record<string, unknown>) ?? {};
+    return ['x', 'y', 'w', 'h'].some((k) => k in bound) ? null : w;
+  }
+
+  private onHandleDown(e: PointerEvent, w: PlacedWidget, handle: Handle) {
+    e.stopPropagation();
+    e.preventDefault();
+    const start = { x: w.x, y: w.y, w: w.w, h: w.h };
+    const sx = e.clientX;
+    const sy = e.clientY;
+    const bounds = { w: this.deviceProfile.width, h: this.deviceProfile.height };
+    const onMove = (m: PointerEvent) => {
+      const r = resizeRect(start, handle, (m.clientX - sx) / this.zoom, (m.clientY - sy) / this.zoom, bounds);
+      this.dispatchEvent(
+        new CustomEvent('widget-resize', { detail: { objId: w.obj_id_start, ...r }, bubbles: true, composed: true })
+      );
+    };
+    const onUp = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+  }
+
+  private renderHandles() {
+    const w = this.resizable();
+    if (!w) return nothing;
+    const g = w.widget_def_id === 'raw' ? rawGeometry(w, this.evaluatedValues[w.obj_id_start]) : { x: w.x, y: w.y, w: w.w, h: w.h };
+    const hs = 9 / this.zoom; // keep the handles a constant size on screen
+    const spots: [Handle, string, string, string][] = [
+      ['nw', '0%', '0%', 'nwse-resize'],
+      ['n', '50%', '0%', 'ns-resize'],
+      ['ne', '100%', '0%', 'nesw-resize'],
+      ['e', '100%', '50%', 'ew-resize'],
+      ['se', '100%', '100%', 'nwse-resize'],
+      ['s', '50%', '100%', 'ns-resize'],
+      ['sw', '0%', '100%', 'nesw-resize'],
+      ['w', '0%', '50%', 'ew-resize'],
+    ];
+    return html`<div class="resize-box" style="left:${g.x}px;top:${g.y}px;width:${g.w}px;height:${g.h}px">
+      ${spots.map(
+        ([handle, left, top, cursor]) => html`<span
+          class="rh"
+          aria-hidden="true"
+          style="left:${left};top:${top};width:${hs}px;height:${hs}px;margin:${-hs / 2}px 0 0 ${-hs / 2}px;cursor:${cursor}"
+          @pointerdown=${(e: PointerEvent) => this.onHandleDown(e, w, handle)}
+        ></span>`
+      )}
+    </div>`;
+  }
+
   private onSurfacePointerMove(e: PointerEvent) {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     this.dispatchEvent(
@@ -547,6 +621,7 @@ export class Canvas extends LitElement {
               style="opacity:${this.overlayOpacity};mix-blend-mode:${this.overlayDifference ? 'difference' : 'normal'}"
             />`
           : nothing}
+        ${this.renderHandles()}
       </div>
       </div>
     `;

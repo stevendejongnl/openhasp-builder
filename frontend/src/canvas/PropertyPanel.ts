@@ -293,6 +293,7 @@ export class PropertyPanel extends LitElement {
       <ul>
         <li><b>Shift-click</b> adds to the selection</li>
         <li><b>Arrow keys</b> nudge by 1 px, <kbd>Shift</kbd> by 5 px</li>
+        <li><b>Alt + arrow keys</b> resize (or drag a handle)</li>
         <li><b>Double-click</b> opens the raw editor</li>
       </ul>
     </div>`;
