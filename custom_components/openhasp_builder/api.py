@@ -12,6 +12,7 @@ from .compiler import compile_plate
 from .importer import import_plate, import_plate_text
 from .validation import validate_plate
 from .const import DEFAULT_DEVICE_PROFILES, DEFAULT_THEMES
+from .device import DeviceScreenshotView
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -480,3 +481,4 @@ def async_register_api_views(hass: HomeAssistant, store: PlateStore) -> None:
     hass.http.register_view(ConfigTextView())
     hass.http.register_view(ConfigPreviewView())
     hass.http.register_view(TemplateEvalView(hass))
+    hass.http.register_view(DeviceScreenshotView(hass))
