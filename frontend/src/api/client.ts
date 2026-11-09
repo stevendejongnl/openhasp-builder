@@ -127,3 +127,11 @@ export function previewConfigText(
     theme_id: themeId,
   });
 }
+
+export type DeviceScreenshot = { png_base64: string; width: number; height: number; fetched_at: string };
+
+// The backend fetches the panel's own /screenshot (a browser can't: mixed
+// content) and returns it as a PNG, so it can be used as a data URL.
+export function getDeviceScreenshot(plateId: string): Promise<DeviceScreenshot> {
+  return req(`/plates/${plateId}/device_screenshot`);
+}

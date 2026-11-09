@@ -466,6 +466,15 @@ export class Canvas extends LitElement {
       cursor: move;
       overflow: hidden;
     }
+    .device-overlay {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      image-rendering: pixelated;
+    }
     .widget.selected {
       border-color: var(--primary-color, #03a9f4);
       box-shadow: 0 0 0 1px var(--primary-color, #03a9f4);
@@ -490,6 +499,10 @@ export class Canvas extends LitElement {
   // Editor zoom (1 = device pixels). The surface is scaled with a CSS transform,
   // so every pointer delta/offset below is divided by it.
   @property({ type: Number }) zoom = 1;
+  // "Compare with device": the panel's own screenshot drawn over the surface.
+  @property() overlaySrc = '';
+  @property({ type: Number }) overlayOpacity = 0.5;
+  @property({ type: Boolean }) overlayDifference = false;
 
   private onSurfaceDragOver(e: DragEvent) {
     e.preventDefault();
@@ -656,6 +669,14 @@ export class Canvas extends LitElement {
             >${w.widget_def_id === 'raw' ? rawBody(w, this.evaluatedValues[w.obj_id_start]) : w.widget_def_id}</div>
           `;
         })}
+        ${this.overlaySrc
+          ? html`<img
+              class="device-overlay"
+              alt=""
+              src=${this.overlaySrc}
+              style="opacity:${this.overlayOpacity};mix-blend-mode:${this.overlayDifference ? 'difference' : 'normal'}"
+            />`
+          : nothing}
       </div>
       </div>
     `;

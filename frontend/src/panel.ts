@@ -240,6 +240,25 @@ export class OpenhaspBuilderPanel extends LitElement {
       color: var(--ohb-muted);
       font-size: 12px;
     }
+    .compare {
+      display: grid;
+      grid-auto-flow: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .opacity {
+      display: grid;
+      grid-template-columns: 110px 40px;
+      align-items: center;
+      gap: 8px;
+    }
+    .opacity input {
+      width: 100%;
+      accent-color: var(--ohb-accent);
+    }
+    .opacity output {
+      font: 500 12px var(--ohb-mono);
+    }
     .zoom {
       display: grid;
       grid-auto-flow: column;
@@ -457,6 +476,11 @@ export class OpenhaspBuilderPanel extends LitElement {
   @state() private drawer: 'history' | 'theme' | null = null;
   @state() private themes: Theme[] = [];
   @state() private dirty = false;
+  @state() private compareOn = false;
+  @state() private compareSrc = '';
+  @state() private compareOpacity = 50;
+  @state() private compareDifference = false;
+  @state() private compareBusy = false;
   @state() private componentName = '';
   @state() private zoom = 1;
   @state() private autoFit = true;
@@ -587,6 +611,8 @@ export class OpenhaspBuilderPanel extends LitElement {
   }
 
   private backToPicker() {
+    this.compareOn = false;
+    this.compareSrc = '';
     this.plate = null;
     this.plateId = '';
     this.selectedObjIds = new Set();
@@ -1042,6 +1068,32 @@ export class OpenhaspBuilderPanel extends LitElement {
     }
   };
 
+  // "Compare with device": overlay the real panel's current screen on the canvas.
+  // It shows whichever page the device is on right now, so Refresh re-reads it.
+  private async fetchCompare(): Promise<boolean> {
+    if (!this.plate) return false;
+    this.compareBusy = true;
+    try {
+      const shot = await api.getDeviceScreenshot(this.plate.id);
+      this.compareSrc = `data:image/png;base64,${shot.png_base64}`;
+      return true;
+    } catch (err) {
+      this.statusMessage = `Compare with device failed: ${(err as Error).message}`;
+      return false;
+    } finally {
+      this.compareBusy = false;
+    }
+  }
+
+  private async toggleCompare() {
+    if (this.compareOn) {
+      this.compareOn = false;
+      this.compareSrc = '';
+      return;
+    }
+    this.compareOn = await this.fetchCompare();
+  }
+
   private openPublishDialog() {
     (this.renderRoot.querySelector('#publish-dialog') as HTMLDialogElement | null)?.showModal();
   }
@@ -1404,7 +1456,49 @@ export class OpenhaspBuilderPanel extends LitElement {
               </button>
             </div>
             <div class="info">Click to select · Shift-click adds · arrow keys nudge 1 px (⇧ 5 px) · double-click opens the raw editor</div>
-            <span></span>
+            <div class="compare">
+              ${this.compareOn
+                ? html`
+                    <label class="opacity">
+                      <span class="sr">Device overlay opacity</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        .value=${String(this.compareOpacity)}
+                        @input=${(e: Event) => (this.compareOpacity = Number((e.target as HTMLInputElement).value))}
+                      />
+                      <output>${this.compareOpacity}%</output>
+                    </label>
+                    <button
+                      class="btn"
+                      aria-pressed=${this.compareDifference}
+                      title="Show only where the preview and the device differ"
+                      @click=${() => (this.compareDifference = !this.compareDifference)}
+                    >
+                      Difference
+                    </button>
+                    <button
+                      class="btn icon ghost"
+                      aria-label="Refresh the device screenshot"
+                      title="Read the device's screen again"
+                      ?disabled=${this.compareBusy}
+                      @click=${() => void this.fetchCompare()}
+                    >
+                      ${icon('refresh')}
+                    </button>
+                  `
+                : nothing}
+              <button
+                class="btn"
+                aria-pressed=${this.compareOn}
+                ?disabled=${this.compareBusy}
+                title="Overlay the device's current screen (the page it is showing now) on the canvas"
+                @click=${() => void this.toggleCompare()}
+              >
+                ${icon('layers')}${this.compareBusy ? 'Reading device…' : 'Compare with device'}
+              </button>
+            </div>
           </div>
           <div class="canvas-area">
             ${this.activePage && profile
@@ -1418,6 +1512,9 @@ export class OpenhaspBuilderPanel extends LitElement {
                     .evaluatedValues=${this.evaluatedValues}
                     .selectedIds=${this.selectedObjIds}
                     .zoom=${this.zoom}
+                    .overlaySrc=${this.compareOn ? this.compareSrc : ''}
+                    .overlayOpacity=${this.compareOpacity / 100}
+                    .overlayDifference=${this.compareDifference}
                     @widget-place=${this.onWidgetPlace}
                     @composite-place=${this.onCompositePlace}
                     @widget-select=${this.onWidgetSelect}
